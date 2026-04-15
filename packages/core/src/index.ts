@@ -1,0 +1,11 @@
+export type { AgentId, DocumentationReference } from "./model/agent";
+export type { Diagnostic, DiagnosticSeverity } from "./model/diagnostics";
+export type { PermissionSource, PermissionScope, SourceFile, SourceFormat, SourceKind, WriteSupport } from "./model/source";
+export type { Capability, Confidence, EffectivePermission, PermissionRule, RuleEffect } from "./model/permission";
+export type { BackupRecord } from "./backups/manifest";
+export type { ChangePlan, PermissionIntent, PermissionIntentDefinition, PlanChangeInput } from "./model/change";
+export type { AgentAdapter, AgentSummary, DiscoveryContext, ParsedSource } from "./adapters/types";
+export { createLineDiff, summarizeDiff } from "./planning/diff";
+export { createDiscoveryContext } from "./discovery/discoverUserConfig";
+export { analyzeSources, planSourceChange, type DiscoveryResult } from "./discovery/discoverWorkspace";
+export { getCandidateSources, adapters } from "./discovery/pathCandidates";

@@ -1,0 +1,22 @@
+import { describe, expect, it } from "vitest";
+import { analyzeSources, createDiscoveryContext, planSourceChange } from "../../index";
+import { cursorAdapter } from "./adapter";
+
+describe("cursor adapter", () => {
+  it("parses allow and deny tokens", () => {
+    const context = createDiscoveryContext({ homeDir: "/home/me", repoPath: "/repo", platform: "linux" });
+    const source = cursorAdapter.discover(context).find((item) => item.path === "/repo/.cursor/cli.json")!;
+    const result = analyzeSources(context, [{ ...source, exists: true, content: '{"permissions":{"allow":["Shell(rm)"],"deny":["Write(/tmp/**)"]}}' }]);
+    const summary = result.summaries.find((item) => item.agentId === "cursor");
+    expect(summary?.rules).toHaveLength(2);
+    expect(summary?.highRiskFindings).toContain("Cursor allows risky shell token: Shell(rm)");
+  });
+
+  it("rejects unsupported token writes", () => {
+    const context = createDiscoveryContext({ homeDir: "/home/me", repoPath: "/repo", platform: "linux" });
+    const source = cursorAdapter.discover(context).find((item) => item.path === "/repo/.cursor/cli.json")!;
+    const result = analyzeSources(context, [{ ...source, exists: true, content: "{}" }]);
+    const plan = planSourceChange(result, { sourceId: source.id, currentContent: "{}", intent: "add-allow-rule", value: "Danger(*)", actionLabel: "Bad token" });
+    expect(plan.ok).toBe(false);
+  });
+});
