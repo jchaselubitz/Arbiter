@@ -1,0 +1,8 @@
+sources:
+  - name: "local"
+    kind: "local"
+install_path: ".claude/skills"
+skills:
+  - slug: "changelog"
+  - slug: "code-review"
+  - slug: "zod-v4-patterns"
