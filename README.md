@@ -1,6 +1,6 @@
-# Agent Permissions Editor
+# Arbiter
 
-Agent Permissions Editor is a local-first desktop app for inspecting and editing the native permission files used by AI coding agents. It discovers the files those agents already read, explains the likely effective permissions, previews diffs before every write, and stores local backups first. The app does not enforce permissions at runtime.
+Arbiter is a local-first desktop app for inspecting and editing the native permission files used by AI coding agents. It discovers the files those agents already read, explains the likely effective permissions, previews diffs before every write, and stores local backups first. The app does not enforce permissions at runtime.
 
 ## What It Does
 

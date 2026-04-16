@@ -4,7 +4,7 @@ import type { AgentId } from "@agent-permissions-editor/core";
 import { adapters } from "@agent-permissions-editor/core";
 import { AppShell } from "../components/layout/AppShell";
 import { ErrorBoundary } from "../components/ErrorBoundary";
-import { AgentDetail } from "../features/agent-detail/AgentDetail";
+import { AgentDetail, type AgentDetailTab } from "../features/agent-detail/AgentDetail";
 import { Backups } from "../features/backups/Backups";
 import { ChangeReview } from "../features/change-review/ChangeReview";
 import { FileDetail } from "../features/file-detail/FileDetail";
@@ -20,11 +20,12 @@ import type { RouteId } from "./routes";
 
 export function App() {
   const { result, repoPath, selectedAgentId, backups, hydrationStatus, error, rehydrate, chooseRepo, selectAgent } = useWorkspaceStore();
-  const { plan, saving, error: editorError, selectSource, planEdit, confirmWrite, discardPlan } = useEditorStore();
+  const { plan, plans, saving, error: editorError, selectSource, planEdit, planPermittedBashCommand, confirmWrite, discardPlan } = useEditorStore();
   const { route, setRoute, recentRepos, addRecentRepo, setLastAgentForRepo } = useUIStore();
 
   // Platform detection for vibrancy/traffic-lights
   const [platform, setPlatform] = useState<string | null>(null);
+  const [agentDetailTab, setAgentDetailTab] = useState<AgentDetailTab>("permissions");
 
   // Init theme and boot; detect platform
   useEffect(() => {
@@ -101,6 +102,25 @@ export function App() {
     setRoute("overview");
   }
 
+  const backRoute =
+    route === "agents"
+      ? "overview"
+      : route === "files"
+        ? "agents"
+        : route === "change-review"
+          ? "files"
+          : route === "backups"
+            ? "change-review"
+            : route === "docs" || route === "settings"
+              ? "overview"
+              : null;
+
+  function handleGoBack() {
+    if (backRoute) {
+      setRoute(backRoute);
+    }
+  }
+
   function renderRoute() {
     const loading = hydrationStatus === "loading";
 
@@ -113,13 +133,20 @@ export function App() {
             loading={loading}
             onSelectAgent={(id) => { handleSelectAgent(id); setRoute("agents"); }}
             onChooseRepo={handleChooseRepo}
+            onPermitBashCommand={(agentIds, command) => {
+              planPermittedBashCommand(agentIds, command);
+              setRoute("change-review");
+            }}
           />
         );
       case "agents":
         return (
           <AgentDetail
             summary={selectedSummary}
+            activeTab={agentDetailTab}
+            onTabChange={setAgentDetailTab}
             onSelectSource={(sourceId) => {
+              setAgentDetailTab("files");
               selectSource(sourceId);
               setRoute("files");
             }}
@@ -146,6 +173,7 @@ export function App() {
         return (
           <ChangeReview
             plan={plan}
+            plans={plans}
             saving={saving}
             error={editorError}
             onWrite={async () => {
@@ -187,6 +215,8 @@ export function App() {
         onChooseRepo={handleChooseRepo}
         onSelectRecent={handleSelectRecent}
         onSelectAgent={handleSelectAgent}
+        onGoBack={handleGoBack}
+        canGoBack={backRoute !== null}
         platform={platform ?? undefined}
       >
         <ErrorBoundary>
@@ -196,4 +226,3 @@ export function App() {
     </ErrorBoundary>
   );
 }
-

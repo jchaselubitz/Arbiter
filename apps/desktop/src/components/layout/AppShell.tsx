@@ -13,6 +13,8 @@ interface AppShellProps {
   selectedAgentId: AgentId | null;
   route: RouteId;
   onRoute: (route: RouteId) => void;
+  onGoBack: () => void;
+  canGoBack: boolean;
   onChooseRepo: () => void;
   onSelectRecent: (path: string) => void;
   onSelectAgent: (agentId: AgentId) => void;
@@ -27,6 +29,8 @@ function AppShell({
   selectedAgentId,
   route,
   onRoute,
+  onGoBack,
+  canGoBack,
   onChooseRepo,
   onSelectRecent,
   onSelectAgent,
@@ -46,6 +50,8 @@ function AppShell({
         onChooseRepo={onChooseRepo}
         onSelectRecent={onSelectRecent}
         onSelectAgent={onSelectAgent}
+        onGoBack={onGoBack}
+        canGoBack={canGoBack}
         onOpenSettings={() => onRoute("settings")}
         platform={platform}
       />

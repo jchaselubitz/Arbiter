@@ -1,13 +1,19 @@
 import { create } from "zustand";
 import type { BackupRecord, ChangePlan, SourceFile } from "@agent-permissions-editor/core";
-import type { PermissionIntent } from "@agent-permissions-editor/core";
+import type { AgentId, PermissionIntent } from "@agent-permissions-editor/core";
 import { planSourceChange, summarizeDiff } from "@agent-permissions-editor/core";
 import { sha256Text, writePermissionFile } from "../lib/tauriClient";
+import {
+  getPermittedBashCommandTarget,
+  permittedBashCommandLabel,
+  permittedBashCommandValue
+} from "../lib/permittedBashCommands";
 import { useWorkspaceStore } from "./useWorkspaceStore";
 
 interface EditorState {
   selectedSourceId: string | null;
   plan: ChangePlan | null;
+  plans: ChangePlan[];
   saving: boolean;
   error: string | null;
 }
@@ -15,6 +21,7 @@ interface EditorState {
 interface EditorActions {
   selectSource: (sourceId: string | null) => void;
   planEdit: (source: SourceFile, intent: PermissionIntent, value: string, actionLabel: string) => void;
+  planPermittedBashCommand: (agentIds: AgentId[], command: string) => void;
   confirmWrite: () => Promise<void>;
   discardPlan: () => void;
   restoreBackup: (backup: BackupRecord) => Promise<void>;
@@ -23,6 +30,7 @@ interface EditorActions {
 export const useEditorStore = create<EditorState & EditorActions>()((set, get) => ({
   selectedSourceId: null,
   plan: null,
+  plans: [],
   saving: false,
   error: null,
 
@@ -40,33 +48,58 @@ export const useEditorStore = create<EditorState & EditorActions>()((set, get) =
       value,
       actionLabel
     });
-    set({ plan: nextPlan });
+    set({ plan: nextPlan, plans: [nextPlan], error: null });
+  },
+
+  planPermittedBashCommand: (agentIds: AgentId[], command: string) => {
+    const { result } = useWorkspaceStore.getState();
+    if (!result) return;
+    const trimmed = command.trim();
+    const nextPlans = agentIds.map((agentId) => {
+      const summary = result.summaries.find((item) => item.agentId === agentId);
+      const source = summary ? getPermittedBashCommandTarget(summary) : null;
+      if (!summary || !source) {
+        throw new Error(`No writable settings file is available for ${permittedBashCommandLabel(agentId)}.`);
+      }
+      const value = permittedBashCommandValue(agentId, trimmed);
+      return planSourceChange(result, {
+        sourceId: source.id,
+        currentContent: source.content,
+        intent: "add-allow-rule",
+        value,
+        actionLabel: `Permit bash command for ${permittedBashCommandLabel(agentId)}: ${trimmed}`
+      });
+    });
+    set({ plan: nextPlans[0] ?? null, plans: nextPlans, error: null });
   },
 
   confirmWrite: async () => {
-    const { plan } = get();
+    const { plan, plans } = get();
     const { context, result, rehydrate } = useWorkspaceStore.getState();
-    if (!plan || !context) return;
+    const pendingPlans = plans.length > 0 ? plans : plan ? [plan] : [];
+    if (pendingPlans.length === 0 || !context) return;
     set({ saving: true, error: null });
     try {
-      const beforeHash = await sha256Text(plan.before);
-      await writePermissionFile({
-        path: plan.path,
-        beforeHash,
-        before: plan.before,
-        after: plan.after,
-        repoPath: context.repoPath,
-        backup: {
-          adapterId: plan.agentId,
-          adapterVersion: result?.sources.find((s) => s.id === plan.sourceId)?.adapterVersion ?? "0.1.0",
-          originalPath: plan.path,
-          before: plan.before,
-          after: plan.after,
-          actionLabel: plan.actionLabel,
-          diffSummary: summarizeDiff(plan.diff)
-        }
-      });
-      set({ plan: null, saving: false });
+      for (const nextPlan of pendingPlans) {
+        const beforeHash = await sha256Text(nextPlan.before);
+        await writePermissionFile({
+          path: nextPlan.path,
+          beforeHash,
+          before: nextPlan.before,
+          after: nextPlan.after,
+          repoPath: context.repoPath,
+          backup: {
+            adapterId: nextPlan.agentId,
+            adapterVersion: result?.sources.find((s) => s.id === nextPlan.sourceId)?.adapterVersion ?? "0.1.0",
+            originalPath: nextPlan.path,
+            before: nextPlan.before,
+            after: nextPlan.after,
+            actionLabel: nextPlan.actionLabel,
+            diffSummary: summarizeDiff(nextPlan.diff)
+          }
+        });
+      }
+      set({ plan: null, plans: [], saving: false });
       await rehydrate();
     } catch (err) {
       set({ saving: false, error: err instanceof Error ? err.message : String(err) });
@@ -74,7 +107,7 @@ export const useEditorStore = create<EditorState & EditorActions>()((set, get) =
   },
 
   discardPlan: () => {
-    set({ plan: null, error: null });
+    set({ plan: null, plans: [], error: null });
   },
 
   restoreBackup: async (_backup: BackupRecord) => {

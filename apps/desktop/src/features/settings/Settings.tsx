@@ -91,7 +91,7 @@ function Settings() {
         </CardHeader>
         <CardContent>
           <p className="text-sm text-zinc-500 dark:text-zinc-400">
-            Agentgate is a local-first desktop editor for AI agent permission files. No background
+            Arbiter is a local-first desktop editor for AI agent permission files. No background
             service is required — changes are written directly to native config files.
           </p>
           <Separator className="my-4" />

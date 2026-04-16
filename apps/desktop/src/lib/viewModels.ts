@@ -1,4 +1,12 @@
-import type { AgentSummary, Capability, DiscoveryResult, EffectivePermission, PermissionRule, SourceFile } from "@agent-permissions-editor/core";
+import type {
+  AgentSummary,
+  Capability,
+  DiscoveryResult,
+  EffectivePermission,
+  PermissionRule,
+  PermissionScope,
+  SourceFile
+} from "@agent-permissions-editor/core";
 
 export const capabilityLabels: Record<Capability, string> = {
   "shell.execute": "Shell commands",
@@ -15,8 +23,32 @@ export const capabilityLabels: Record<Capability, string> = {
   unknown: "Unknown"
 };
 
+const scopeLabels: Record<PermissionScope, string> = {
+  managed: "Managed",
+  user: "User-level",
+  workspace: "Workspace-level",
+  repo: "Repo-level",
+  local: "Local override",
+  runtime: "Runtime",
+  unknown: "Unknown scope"
+};
+
+const kindLabels: Record<SourceFile["kind"], string> = {
+  settings: "settings",
+  permissions: "permissions",
+  instructions: "instructions",
+  mcp: "MCP config",
+  "ide-settings": "IDE settings",
+  "managed-policy": "managed policy",
+  unknown: "config"
+};
+
+export function sourceScopeLabel(source: SourceFile): string {
+  return scopeLabels[source.scope];
+}
+
 export function sourceLabel(source: SourceFile): string {
-  return `${source.scope} ${source.kind}`;
+  return `${sourceScopeLabel(source)} ${kindLabels[source.kind]}`;
 }
 
 export function sourceBasename(path: string): string {

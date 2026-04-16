@@ -12,7 +12,8 @@ pub fn run() {
             commands::read_candidate_files,
             commands::write_permission_file,
             commands::list_backups,
-            commands::read_text_file
+            commands::read_text_file,
+            commands::open_in_finder
         ])
         .run(tauri::generate_context!())
         .expect("failed to run app");

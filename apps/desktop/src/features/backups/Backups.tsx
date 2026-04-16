@@ -6,6 +6,7 @@ import { Button } from "../../components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "../../components/ui/dialog";
 import { ScrollArea } from "../../components/ui/scroll-area";
 import { Breadcrumbs } from "../../components/layout/Breadcrumbs";
+import { OpenInFinderButton } from "../../components/file/OpenInFinderButton";
 
 interface BackupsProps {
   backups: BackupRecord[];
@@ -36,29 +37,34 @@ function Backups({ backups, onNavigateHome, onRestore }: BackupsProps) {
       ) : (
         <div className="space-y-2">
           {backups.map((backup) => (
-            <button
+            <div
               key={backup.id}
-              type="button"
-              onClick={() => setSelected(backup)}
-              className="flex w-full items-start gap-3 rounded-lg border border-zinc-200 bg-white p-4 text-left hover:border-[#1d7f68]/50 hover:bg-zinc-50 transition-colors dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
+              className="flex items-start gap-3 rounded-lg border border-zinc-200 bg-white p-4 transition-colors hover:border-[#1d7f68]/50 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
             >
-              <div className="rounded-md bg-zinc-100 p-2 dark:bg-zinc-800 shrink-0">
-                <Archive className="h-4 w-4 text-zinc-500" aria-hidden />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="font-mono text-sm font-medium text-zinc-700 dark:text-zinc-300 truncate">
-                    {backup.originalPath}
-                  </p>
+              <button
+                type="button"
+                onClick={() => setSelected(backup)}
+                className="flex flex-1 items-start gap-3 min-w-0 text-left"
+              >
+                <div className="rounded-md bg-zinc-100 p-2 dark:bg-zinc-800 shrink-0">
+                  <Archive className="h-4 w-4 text-zinc-500" aria-hidden />
                 </div>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{backup.actionLabel}</p>
-                <p className="text-xs text-zinc-400 dark:text-zinc-600 mt-0.5 line-clamp-1">{backup.diffSummary}</p>
-              </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="font-mono text-sm font-medium text-zinc-700 dark:text-zinc-300 truncate">
+                      {backup.originalPath}
+                    </p>
+                  </div>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{backup.actionLabel}</p>
+                  <p className="text-xs text-zinc-400 dark:text-zinc-600 mt-0.5 line-clamp-1">{backup.diffSummary}</p>
+                </div>
+              </button>
+              <OpenInFinderButton path={backup.backupPath} className="shrink-0" />
               <div className="flex items-center gap-1 text-xs text-zinc-400 shrink-0 mt-0.5">
                 <Clock className="h-3 w-3" aria-hidden />
                 {backup.createdAt}
               </div>
-            </button>
+            </div>
           ))}
         </div>
       )}
@@ -77,7 +83,10 @@ function Backups({ backups, onNavigateHome, onRestore }: BackupsProps) {
               <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-900">
                 <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-1">Summary</p>
                 <p className="text-sm text-zinc-700 dark:text-zinc-300">{selected.diffSummary}</p>
-                <p className="text-xs font-mono text-zinc-400 mt-2">{selected.backupPath}</p>
+                <div className="mt-2 flex items-start justify-between gap-3">
+                  <p className="text-xs font-mono text-zinc-400 break-all">{selected.backupPath}</p>
+                  <OpenInFinderButton path={selected.backupPath} className="shrink-0" />
+                </div>
               </div>
             </div>
             <DialogFooter>

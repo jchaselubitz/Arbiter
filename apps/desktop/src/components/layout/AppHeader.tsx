@@ -1,5 +1,6 @@
 import * as React from "react";
-import { Moon, Sun, Monitor, Settings } from "lucide-react";
+import { ChevronLeft, Moon, Sun, Monitor, Settings } from "lucide-react";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import type { AgentId, AgentSummary } from "@agent-permissions-editor/core";
 import { AgentSwitcher } from "./AgentSwitcher";
 import { RepoSelector } from "./RepoSelector";
@@ -13,6 +14,9 @@ import {
 import { useUIStore } from "../../stores/useUIStore";
 import { cn } from "../../lib/cn";
 
+const NO_DRAG_SELECTOR =
+  'a,button,input,select,textarea,[contenteditable="true"],[role="button"],[role="combobox"],[role="menuitem"]';
+
 interface AppHeaderProps {
   repoPath: string | null;
   recentRepos: string[];
@@ -21,6 +25,8 @@ interface AppHeaderProps {
   onChooseRepo: () => void;
   onSelectRecent: (path: string) => void;
   onSelectAgent: (agentId: AgentId) => void;
+  onGoBack: () => void;
+  canGoBack: boolean;
   onOpenSettings: () => void;
   platform?: string;
   className?: string;
@@ -34,17 +40,33 @@ function AppHeader({
   onChooseRepo,
   onSelectRecent,
   onSelectAgent,
+  onGoBack,
+  canGoBack,
   onOpenSettings,
   platform,
   className
 }: AppHeaderProps) {
   const { theme, setTheme } = useUIStore();
 
+  function handleHeaderMouseDown(event: React.MouseEvent<HTMLElement>) {
+    if (event.button !== 0) return;
+
+    const target = event.target as HTMLElement | null;
+    const interactiveTarget = target?.closest(NO_DRAG_SELECTOR);
+
+    if (interactiveTarget && interactiveTarget !== event.currentTarget) {
+      return;
+    }
+
+    event.preventDefault();
+    void getCurrentWindow().startDragging();
+  }
+
   return (
     <header
-      data-tauri-drag-region
+      onMouseDown={handleHeaderMouseDown}
       className={cn(
-        "flex h-11 shrink-0 items-center border-b border-zinc-200 bg-white/80 dark:border-zinc-800 dark:bg-zinc-950/80 backdrop-blur-md",
+        "flex h-11 shrink-0 cursor-default select-none items-center border-b border-zinc-200 bg-white/80 dark:border-zinc-800 dark:bg-zinc-950/80 backdrop-blur-md",
         platform === "macos" && "titlebar-inset",
         className
       )}
@@ -56,7 +78,7 @@ function AppHeader({
           className="text-sm font-semibold tracking-tight text-zinc-800 dark:text-zinc-100 select-none"
           aria-hidden
         >
-          agentgate
+          Arbiter
         </span>
         <RepoSelector
           repoPath={repoPath}
@@ -66,8 +88,18 @@ function AppHeader({
         />
       </div>
 
-      {/* Center: agent switcher */}
-      <div className="flex flex-1 items-center justify-center px-4">
+      {/* Center: back button + agent switcher */}
+      <div className="flex flex-1 items-center justify-center gap-2 px-4">
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label="Go back"
+          onClick={onGoBack}
+          disabled={!canGoBack}
+          className="shrink-0"
+        >
+          <ChevronLeft className="h-4 w-4" aria-hidden />
+        </Button>
         <AgentSwitcher
           summaries={summaries}
           selectedAgentId={selectedAgentId}

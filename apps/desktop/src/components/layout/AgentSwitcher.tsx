@@ -79,12 +79,12 @@ interface AgentIconProps {
 
 function AgentIcon({ agentId, detected = true, size = 20, className, "aria-hidden": ariaHidden }: AgentIconProps) {
   const iconMap: Record<AgentId, string> = {
-    "claude-code": "/icons/claude-code.svg",
-    "openai-codex": "/icons/codex.svg",
-    cursor: "/icons/cursor.svg",
-    gemini: "/icons/gemini.svg",
-    antigravity: "/icons/antigravity.svg",
-    opencode: "/icons/opencode.svg"
+    "claude-code": new URL("../../../images/icons/claude-code.svg", import.meta.url).href,
+    "openai-codex": new URL("../../../images/icons/codex.svg", import.meta.url).href,
+    cursor: new URL("../../../images/icons/cursor.svg", import.meta.url).href,
+    gemini: new URL("../../../images/icons/gemini.svg", import.meta.url).href,
+    antigravity: new URL("../../../images/icons/antigravity.svg", import.meta.url).href,
+    opencode: new URL("../../../images/icons/opencode.svg", import.meta.url).href
   };
 
   const src = iconMap[agentId];

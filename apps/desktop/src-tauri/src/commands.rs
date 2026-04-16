@@ -2,6 +2,7 @@ use crate::backup::{create_backup, is_expected_config_path, list_backups as read
 use crate::fs::{atomic_write, read_text, sha256, FileState};
 use crate::validation::validate_write_target;
 use serde::{Deserialize, Serialize};
+use std::process::Command;
 use std::path::PathBuf;
 use tauri::{AppHandle, Manager};
 
@@ -93,4 +94,36 @@ pub fn write_permission_file(app: AppHandle, request: WriteRequest) -> Result<Wr
 #[tauri::command]
 pub fn list_backups(app: AppHandle) -> Result<Vec<BackupRecord>, String> {
     read_backup_manifest(&app)
+}
+
+#[tauri::command]
+pub fn open_in_finder(path: String) -> Result<(), String> {
+    let target = PathBuf::from(path);
+    if !target.exists() {
+        return Err("File does not exist.".to_string());
+    }
+
+    let status = if cfg!(target_os = "macos") {
+        Command::new("open").arg("-R").arg(&target).status()
+    } else if cfg!(target_os = "windows") {
+        let arg = if target.is_dir() {
+            target.to_string_lossy().to_string()
+        } else {
+            format!("/select,{}", target.to_string_lossy())
+        };
+        Command::new("explorer").arg(arg).status()
+    } else {
+        let target = if target.is_dir() {
+            target
+        } else {
+            target.parent().map(PathBuf::from).unwrap_or(target)
+        };
+        Command::new("xdg-open").arg(target).status()
+    };
+
+    match status {
+        Ok(exit) if exit.success() => Ok(()),
+        Ok(exit) => Err(format!("Failed to open file manager (exit code: {:?}).", exit.code())),
+        Err(error) => Err(format!("Failed to open file manager: {error}")),
+    }
 }

@@ -61,6 +61,10 @@ export async function listBackups(): Promise<BackupRecord[]> {
   return invoke("list_backups");
 }
 
+export async function openInFinder(path: string): Promise<void> {
+  return invoke("open_in_finder", { path });
+}
+
 export function hydrateSources(sources: SourceFile[], states: FileStateDto[]): SourceFile[] {
   const byPath = new Map(states.map((state) => [state.path, state]));
   return sources.map((source) => {

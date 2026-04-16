@@ -67,19 +67,6 @@ h1, h2, h3, h4, h5, h6, p {
   margin: 0;
 }
 
-/* Draggable titlebar region */
-[data-tauri-drag-region] {
-  -webkit-app-region: drag;
-  app-region: drag;
-  cursor: default;
-  user-select: none;
-}
-
-[data-tauri-drag-region] * {
-  -webkit-app-region: no-drag;
-  app-region: no-drag;
-}
-
 /* App shell layout */
 .app-root {
   display: flex;

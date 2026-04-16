@@ -3,3 +3,6 @@ apps/desktop/dist/
 apps/desktop/src-tauri/target/
 .DS_Store
 *.log
+
+
+.env

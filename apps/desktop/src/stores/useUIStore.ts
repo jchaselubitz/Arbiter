@@ -5,6 +5,26 @@ import type { AgentId } from "@agent-permissions-editor/core";
 
 type Theme = "light" | "dark" | "system";
 
+const PERSIST_KEY = "arbiter-ui";
+const LEGACY_PERSIST_KEY = "agentgate-ui";
+
+function migratePersistedUIState() {
+  if (typeof window === "undefined") return;
+
+  try {
+    const current = window.localStorage.getItem(PERSIST_KEY);
+    const legacy = window.localStorage.getItem(LEGACY_PERSIST_KEY);
+
+    if (!current && legacy) {
+      window.localStorage.setItem(PERSIST_KEY, legacy);
+    }
+  } catch {
+    // Ignore storage access failures and fall back to the default state.
+  }
+}
+
+migratePersistedUIState();
+
 interface UIState {
   theme: Theme;
   sidebarCollapsed: boolean;
@@ -69,7 +89,7 @@ export const useUIStore = create<UIState & UIActions>()(
       }
     }),
     {
-      name: "agentgate-ui",
+      name: PERSIST_KEY,
       partialize: (state) => ({
         theme: state.theme,
         sidebarCollapsed: state.sidebarCollapsed,

@@ -7,17 +7,27 @@ import { StatusPill } from "../../components/ui/status-pill";
 import { Card, CardHeader, CardTitle, CardContent } from "../../components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs";
 import { ScrollArea } from "../../components/ui/scroll-area";
+import { Badge } from "../../components/ui/badge";
 import { AgentIcon } from "../../components/layout/AgentSwitcher";
 import { Breadcrumbs } from "../../components/layout/Breadcrumbs";
-import { sourceLabel } from "../../lib/viewModels";
+import { sourceLabel, sourceScopeLabel } from "../../lib/viewModels";
+import { OpenInFinderButton } from "../../components/file/OpenInFinderButton";
 
 interface AgentDetailProps {
   summary: AgentSummary | null;
+  activeTab: AgentDetailTab;
+  onTabChange: (tab: AgentDetailTab) => void;
   onSelectSource: (sourceId: string) => void;
   onNavigateHome: () => void;
 }
 
-function AgentDetail({ summary, onSelectSource, onNavigateHome }: AgentDetailProps) {
+export type AgentDetailTab = "permissions" | "files" | "rules";
+
+function isAgentDetailTab(value: string): value is AgentDetailTab {
+  return value === "permissions" || value === "files" || value === "rules";
+}
+
+function AgentDetail({ summary, activeTab, onTabChange, onSelectSource, onNavigateHome }: AgentDetailProps) {
   if (!summary) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4 text-center px-8 py-16">
@@ -65,7 +75,12 @@ function AgentDetail({ summary, onSelectSource, onNavigateHome }: AgentDetailPro
       )}
 
       {/* Tabs: Permissions | Files | Rules */}
-      <Tabs defaultValue="permissions">
+      <Tabs
+        value={activeTab}
+        onValueChange={(value: string) => {
+          if (isAgentDetailTab(value)) onTabChange(value);
+        }}
+      >
         <TabsList>
           <TabsTrigger value="permissions">Permissions</TabsTrigger>
           <TabsTrigger value="files">Files ({summary.sources.length})</TabsTrigger>
@@ -85,22 +100,37 @@ function AgentDetail({ summary, onSelectSource, onNavigateHome }: AgentDetailPro
         <TabsContent value="files" className="mt-4">
           <div className="space-y-2">
             {summary.sources.map((source) => (
-              <button
+              <div
                 key={source.id}
-                type="button"
-                onClick={() => onSelectSource(source.id)}
-                className="flex w-full items-start gap-3 rounded-lg border border-zinc-200 bg-white p-3 text-left hover:border-[#1d7f68]/50 hover:bg-zinc-50 transition-colors dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
+                className="flex items-start gap-3 rounded-lg border border-zinc-200 bg-white p-3 transition-colors hover:border-[#1d7f68]/50 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
               >
-                <FileCode2 className="h-4 w-4 shrink-0 mt-0.5 text-zinc-400" aria-hidden />
-                <div className="min-w-0">
-                  <p className="font-mono text-xs font-medium text-zinc-700 dark:text-zinc-300 truncate">
-                    {source.path}
-                  </p>
-                  <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">
-                    {sourceLabel(source)} · {source.exists ? "exists" : "missing"} · {source.writeSupport}
-                  </p>
-                </div>
-              </button>
+                <button
+                  type="button"
+                  onClick={() => onSelectSource(source.id)}
+                  className="flex flex-1 items-start gap-3 text-left min-w-0"
+                >
+                  <FileCode2 className="h-4 w-4 shrink-0 mt-0.5 text-zinc-400" aria-hidden />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant={source.scope === "repo" ? "ok" : source.scope === "user" ? "warn" : "secondary"}>
+                        {sourceScopeLabel(source)}
+                      </Badge>
+                      <p className="flex-1 min-w-0 font-mono text-xs font-medium text-zinc-700 dark:text-zinc-300 truncate">
+                        {source.path}
+                      </p>
+                    </div>
+                    <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">
+                      {sourceLabel(source)} · {source.exists ? "exists" : "missing"} · {source.writeSupport}
+                    </p>
+                  </div>
+                </button>
+                {source.exists && (
+                  <OpenInFinderButton
+                    path={source.resolvedPath ?? source.path}
+                    className="shrink-0"
+                  />
+                )}
+              </div>
             ))}
           </div>
         </TabsContent>

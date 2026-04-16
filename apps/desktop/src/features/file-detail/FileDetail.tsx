@@ -3,13 +3,15 @@ import { useState } from "react";
 import type { DiscoveryResult, SourceFile, PermissionIntent } from "@agent-permissions-editor/core";
 import { AlertCircle, FileCode2 } from "lucide-react";
 import { StatusPill } from "../../components/ui/status-pill";
+import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
 import { ScrollArea } from "../../components/ui/scroll-area";
 import { Breadcrumbs } from "../../components/layout/Breadcrumbs";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "../../components/ui/sheet";
 import { Label } from "../../components/ui/label";
 import { Input } from "../../components/ui/input";
-import { sourceLabel, rulesForSource } from "../../lib/viewModels";
+import { sourceLabel, sourceScopeLabel, rulesForSource } from "../../lib/viewModels";
+import { OpenInFinderButton } from "../../components/file/OpenInFinderButton";
 
 interface FileDetailProps {
   result: DiscoveryResult | null;
@@ -51,7 +53,7 @@ function FileDetail({ result, source, onPlan, onNavigateAgent, onNavigateHome, a
   }
 
   return (
-    <div className="p-6 space-y-5 max-w-4xl">
+    <div className="flex h-full min-h-0 flex-col p-6 space-y-5 max-w-4xl">
       <Breadcrumbs
         items={[
           { label: "Overview", onClick: onNavigateHome },
@@ -63,6 +65,11 @@ function FileDetail({ result, source, onPlan, onNavigateAgent, onNavigateHome, a
       {/* Header */}
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
+          <div className="mb-2">
+            <Badge variant={source.scope === "repo" ? "ok" : source.scope === "user" ? "warn" : "secondary"}>
+              {sourceScopeLabel(source)}
+            </Badge>
+          </div>
           <h1 className="font-mono text-lg font-semibold text-zinc-800 dark:text-zinc-100 truncate">
             {source.path}
           </h1>
@@ -72,6 +79,12 @@ function FileDetail({ result, source, onPlan, onNavigateAgent, onNavigateHome, a
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <StatusPill tone={tone}>{source.writeSupport}</StatusPill>
+          {source.exists && (
+            <OpenInFinderButton
+              path={source.resolvedPath ?? source.path}
+              label="Open in Finder"
+            />
+          )}
           <Button
             size="sm"
             onClick={() => setPlanSheetOpen(true)}
@@ -134,9 +147,9 @@ function FileDetail({ result, source, onPlan, onNavigateAgent, onNavigateHome, a
       )}
 
       {/* Raw content */}
-      <section>
+      <section className="flex min-h-0 flex-1 flex-col">
         <h2 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-2">Raw content</h2>
-        <ScrollArea className="max-h-80 rounded-lg border border-zinc-200 bg-zinc-950 dark:border-zinc-700">
+        <ScrollArea className="h-full min-h-0 rounded-lg border border-zinc-200 bg-zinc-950 dark:border-zinc-700">
           <pre className="p-4 text-xs font-mono text-zinc-300 whitespace-pre-wrap break-all">
             {source.content ?? <span className="text-zinc-500 italic">File does not exist yet.</span>}
           </pre>

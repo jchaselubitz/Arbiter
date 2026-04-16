@@ -1,6 +1,6 @@
 {
   "name": "agent-permissions-editor",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Local-first desktop editor for AI coding agent permission files.",
   "type": "module",
