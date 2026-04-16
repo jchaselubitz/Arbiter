@@ -1,4 +1,4 @@
-export type AgentId = "claude-code" | "openai-codex" | "cursor";
+export type AgentId = "claude-code" | "openai-codex" | "cursor" | "gemini" | "antigravity" | "opencode";
 
 export interface DocumentationReference {
   agentId: AgentId;

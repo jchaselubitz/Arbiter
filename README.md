@@ -1,6 +1,6 @@
 # Agent Permissions Editor
 
-Agent Permissions Editor is a local-first desktop app for reviewing and editing native permission files used by AI coding agents. The app does not enforce permissions at runtime. It makes careful edits to the files that Claude Code, OpenAI Codex, and Cursor already read.
+Agent Permissions Editor is a local-first desktop app for inspecting and editing the native permission files used by AI coding agents. It discovers the files those agents already read, explains the likely effective permissions, previews diffs before every write, and stores local backups first. The app does not enforce permissions at runtime.
 
 ## What It Does
 
@@ -25,6 +25,9 @@ Agent Permissions Editor is a local-first desktop app for reviewing and editing 
 - Claude Code: settings files, permission arrays, default mode, selected sandbox settings.
 - OpenAI Codex: TOML config and AGENTS.md instruction sources, read-first MVP behavior.
 - Cursor: CLI JSON permissions and repo rule/instruction sources.
+- Gemini: config sources discovered by the core adapter layer.
+- Antigravity: config sources discovered by the core adapter layer.
+- OpenCode: config sources discovered by the core adapter layer.
 
 ## Supported Platforms
 
@@ -42,6 +45,12 @@ npm run dev
 ```
 
 ## Build
+
+The desktop bundle requires the Rust toolchain because Tauri compiles a native shell. Install Rust from <https://rustup.rs/> and restart your shell before running the Tauri build. Verify the prerequisite with:
+
+```bash
+cargo --version
+```
 
 ```bash
 npm run build

@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "npm run dev -w @agent-permissions-editor/desktop",
-    "tauri": "npm run tauri -w @agent-permissions-editor/desktop",
+    "tauri": "node scripts/tauri.mjs",
     "build": "npm run build --workspaces",
     "test": "npm run test -w @agent-permissions-editor/core",
     "typecheck": "npm run typecheck --workspaces"

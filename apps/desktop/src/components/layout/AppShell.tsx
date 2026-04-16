@@ -1,35 +1,69 @@
-import type { ReactNode } from "react";
+import * as React from "react";
+import { Toaster } from "sonner";
+import type { AgentId, AgentSummary } from "@agent-permissions-editor/core";
 import type { RouteId } from "../../app/routes";
-import { routes } from "../../app/routes";
+import { AppHeader } from "./AppHeader";
+import { AppSidebar } from "./AppSidebar";
+import { cn } from "../../lib/cn";
 
 interface AppShellProps {
-  route: RouteId;
   repoPath: string | null;
+  recentRepos: string[];
+  summaries: AgentSummary[];
+  selectedAgentId: AgentId | null;
+  route: RouteId;
   onRoute: (route: RouteId) => void;
   onChooseRepo: () => void;
-  children: ReactNode;
+  onSelectRecent: (path: string) => void;
+  onSelectAgent: (agentId: AgentId) => void;
+  platform?: string;
+  children: React.ReactNode;
 }
 
-export function AppShell({ route, repoPath, onRoute, onChooseRepo, children }: AppShellProps) {
+function AppShell({
+  repoPath,
+  recentRepos,
+  summaries,
+  selectedAgentId,
+  route,
+  onRoute,
+  onChooseRepo,
+  onSelectRecent,
+  onSelectAgent,
+  platform,
+  children
+}: AppShellProps) {
   return (
-    <div className="shell">
-      <aside className="sidebar">
-        <div>
-          <h1>Agent Permissions Editor</h1>
-          <p>This app edits local permission files used by your agents.</p>
-        </div>
-        <button className="repo-button" type="button" onClick={onChooseRepo}>
-          {repoPath ? repoPath : "Choose repository"}
-        </button>
-        <nav aria-label="Primary">
-          {routes.map((item) => (
-            <button key={item.id} className={route === item.id ? "active" : ""} type="button" onClick={() => onRoute(item.id)}>
-              {item.label}
-            </button>
-          ))}
-        </nav>
-      </aside>
-      <main className="main">{children}</main>
+    <div
+      className="app-root"
+      data-platform={platform}
+    >
+      <AppHeader
+        repoPath={repoPath}
+        recentRepos={recentRepos}
+        summaries={summaries}
+        selectedAgentId={selectedAgentId}
+        onChooseRepo={onChooseRepo}
+        onSelectRecent={onSelectRecent}
+        onSelectAgent={onSelectAgent}
+        onOpenSettings={() => onRoute("settings")}
+        platform={platform}
+      />
+      <div className="flex flex-1 min-h-0">
+        <AppSidebar route={route} onRoute={onRoute} />
+        <main
+          id="main-content"
+          className={cn(
+            "flex-1 min-w-0 overflow-auto bg-zinc-50 dark:bg-zinc-950"
+          )}
+          tabIndex={-1}
+        >
+          {children}
+        </main>
+      </div>
+      <Toaster position="bottom-right" richColors closeButton />
     </div>
   );
 }
+
+export { AppShell };

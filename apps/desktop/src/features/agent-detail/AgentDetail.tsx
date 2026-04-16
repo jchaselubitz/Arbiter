@@ -1,43 +1,141 @@
+import * as React from "react";
 import type { AgentSummary } from "@agent-permissions-editor/core";
+import type { AgentId } from "@agent-permissions-editor/core";
+import { FileCode2, AlertCircle } from "lucide-react";
 import { PermissionMatrix } from "../../components/permission/PermissionMatrix";
-import { StatusPill } from "../../components/ui/StatusPill";
+import { StatusPill } from "../../components/ui/status-pill";
+import { Card, CardHeader, CardTitle, CardContent } from "../../components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs";
+import { ScrollArea } from "../../components/ui/scroll-area";
+import { AgentIcon } from "../../components/layout/AgentSwitcher";
+import { Breadcrumbs } from "../../components/layout/Breadcrumbs";
 import { sourceLabel } from "../../lib/viewModels";
 
-export function AgentDetail({ summary, onSelectSource }: { summary: AgentSummary | null; onSelectSource: (sourceId: string) => void }) {
-  if (!summary) return <p>Select an agent from the overview.</p>;
-  return (
-    <section className="stack">
-      <div className="page-title">
-        <div>
-          <h2>{summary.displayName}</h2>
-          <p>Adapter {summary.sources[0]?.adapterVersion ?? "0.1.0"}, docs reviewed {summary.sources[0]?.docsReviewedAt ?? "2026-04-15"}</p>
-        </div>
-        <StatusPill tone={summary.status === "parse-error" ? "danger" : summary.status === "found" ? "ok" : "muted"}>{summary.status}</StatusPill>
+interface AgentDetailProps {
+  summary: AgentSummary | null;
+  onSelectSource: (sourceId: string) => void;
+  onNavigateHome: () => void;
+}
+
+function AgentDetail({ summary, onSelectSource, onNavigateHome }: AgentDetailProps) {
+  if (!summary) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full gap-4 text-center px-8 py-16">
+        <AlertCircle className="h-10 w-10 text-zinc-300" aria-hidden />
+        <p className="text-zinc-500 dark:text-zinc-400">Select an agent from the overview to view details.</p>
       </div>
-      <PermissionMatrix summary={summary} />
-      <section>
-        <h3>Source files</h3>
-        <div className="source-list">
-          {summary.sources.map((source) => (
-            <button key={source.id} type="button" onClick={() => onSelectSource(source.id)}>
-              <strong>{source.path}</strong>
-              <span>{sourceLabel(source)} · {source.exists ? "exists" : "missing target"} · {source.writeSupport}</span>
-            </button>
-          ))}
+    );
+  }
+
+  const tone = summary.status === "parse-error" ? "danger" : summary.status === "found" ? "ok" : "muted";
+
+  return (
+    <div className="p-6 space-y-5 max-w-4xl">
+      <Breadcrumbs
+        items={[
+          { label: "Overview", onClick: onNavigateHome },
+          { label: summary.displayName }
+        ]}
+      />
+
+      {/* Header */}
+      <div className="flex items-center gap-4">
+        <AgentIcon agentId={summary.agentId as AgentId} detected={summary.status !== "not-found"} size={32} />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-semibold text-zinc-800 dark:text-zinc-100">{summary.displayName}</h1>
+            <StatusPill tone={tone}>{summary.status}</StatusPill>
+          </div>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 font-mono">
+            Adapter {summary.sources[0]?.adapterVersion ?? "0.1.0"} · docs reviewed {summary.sources[0]?.docsReviewedAt ?? "2026-04-15"}
+          </p>
         </div>
-      </section>
-      <section>
-        <h3>Known rules</h3>
-        <div className="rule-list">
-          {summary.rules.map((rule) => (
-            <article key={rule.id}>
-              <strong>{rule.label}</strong>
-              <span>{rule.effect} · {rule.capability} · {rule.confidence}</span>
-              <p>{rule.explanation}</p>
-            </article>
-          ))}
+      </div>
+
+      {/* Diagnostics banner */}
+      {summary.diagnostics.some((d) => d.severity === "error") && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 dark:border-red-900/50 dark:bg-red-950/30">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400 shrink-0" aria-hidden />
+            <p className="text-sm text-red-700 dark:text-red-300">
+              {summary.diagnostics.filter((d) => d.severity === "error").map((d) => d.message).join("; ")}
+            </p>
+          </div>
         </div>
-      </section>
-    </section>
+      )}
+
+      {/* Tabs: Permissions | Files | Rules */}
+      <Tabs defaultValue="permissions">
+        <TabsList>
+          <TabsTrigger value="permissions">Permissions</TabsTrigger>
+          <TabsTrigger value="files">Files ({summary.sources.length})</TabsTrigger>
+          <TabsTrigger value="rules">Rules ({summary.rules.length})</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="permissions" className="mt-4">
+          {summary.status === "not-found" ? (
+            <p className="text-sm text-zinc-500 dark:text-zinc-400 py-4">
+              No configuration found for {summary.displayName} in this context.
+            </p>
+          ) : (
+            <PermissionMatrix summary={summary} />
+          )}
+        </TabsContent>
+
+        <TabsContent value="files" className="mt-4">
+          <div className="space-y-2">
+            {summary.sources.map((source) => (
+              <button
+                key={source.id}
+                type="button"
+                onClick={() => onSelectSource(source.id)}
+                className="flex w-full items-start gap-3 rounded-lg border border-zinc-200 bg-white p-3 text-left hover:border-[#1d7f68]/50 hover:bg-zinc-50 transition-colors dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
+              >
+                <FileCode2 className="h-4 w-4 shrink-0 mt-0.5 text-zinc-400" aria-hidden />
+                <div className="min-w-0">
+                  <p className="font-mono text-xs font-medium text-zinc-700 dark:text-zinc-300 truncate">
+                    {source.path}
+                  </p>
+                  <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">
+                    {sourceLabel(source)} · {source.exists ? "exists" : "missing"} · {source.writeSupport}
+                  </p>
+                </div>
+              </button>
+            ))}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="rules" className="mt-4">
+          <ScrollArea className="max-h-96">
+            <div className="space-y-2">
+              {summary.rules.length === 0 ? (
+                <p className="text-sm text-zinc-500 dark:text-zinc-400 py-4">No rules found.</p>
+              ) : (
+                summary.rules.map((rule) => (
+                  <div
+                    key={rule.id}
+                    className="rounded-lg border border-zinc-100 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-900"
+                  >
+                    <div className="flex items-start gap-2">
+                      <code className="flex-1 text-xs font-mono text-zinc-700 dark:text-zinc-300 break-all">
+                        {rule.raw}
+                      </code>
+                      <StatusPill
+                        tone={rule.effect === "deny" ? "ok" : rule.effect === "allow" ? "warn" : "muted"}
+                      >
+                        {rule.effect}
+                      </StatusPill>
+                    </div>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">{rule.explanation}</p>
+                  </div>
+                ))
+              )}
+            </div>
+          </ScrollArea>
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }
+
+export { AgentDetail };
