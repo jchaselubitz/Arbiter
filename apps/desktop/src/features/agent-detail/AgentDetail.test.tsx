@@ -42,7 +42,22 @@ const summary: AgentSummary = {
   effective: [],
   diagnostics: [],
   unknownCount: 0,
-  highRiskFindings: []
+  highRiskFindings: [],
+  extensions: [
+    {
+      id: "claude-code:skills:claude-skills",
+      agentId: "claude-code",
+      kind: "skills",
+      label: "Claude skills",
+      status: "configured",
+      confidence: "known",
+      scope: "repo",
+      sourceIds: ["claude-repo-settings"],
+      locations: ["/repo/.claude/settings.json"],
+      configuration: "Skill directories are loaded from user-level and repo-level `.claude/skills` locations.",
+      notes: ["Repo skills can change agent behavior for this workspace."]
+    }
+  ]
 };
 
 describe("AgentDetail", () => {
@@ -75,5 +90,20 @@ describe("AgentDetail", () => {
     await userEvent.click(view.getByRole("tab", { name: "Rules (1)" }));
 
     expect(onTabChange).toHaveBeenCalledWith("rules");
+  });
+
+  it("renders modeled skills and plugin surfaces", async () => {
+    const view = render(
+      <AgentDetail
+        summary={summary}
+        activeTab="extensions"
+        onTabChange={vi.fn()}
+        onSelectSource={vi.fn()}
+        onNavigateHome={vi.fn()}
+      />
+    );
+
+    expect(view.getByText("Claude skills")).toBeVisible();
+    expect(view.getByText("Configured")).toBeVisible();
   });
 });

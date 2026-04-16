@@ -1,5 +1,5 @@
 import type { AgentAdapter, AgentSummary, DiscoveryContext, ParsedSource } from "../types";
-import { arrayFromUnknown, collectDiagnostics, effectiveFromRules, makeRule, makeSource, nestedObject } from "../common";
+import { arrayFromUnknown, collectDiagnostics, effectiveFromRules, extensionConfig, makeRule, makeSource, nestedObject } from "../common";
 import type { ChangePlan, PlanChangeInput } from "../../model/change";
 import type { PermissionRule } from "../../model/permission";
 import type { SourceFile } from "../../model/source";
@@ -21,15 +21,24 @@ export const claudeAdapter: AgentAdapter = {
   discover(input: DiscoveryContext) {
     const sources: SourceFile[] = [
       makeSource({ agentId: "claude-code", scope: "managed", kind: "managed-policy", path: input.platform === "macos" ? "/Library/Application Support/ClaudeCode/managed-settings.json" : "/etc/claude-code/managed-settings.json", format: "json", precedence: 100, writableByApp: false, writeSupport: "read-only", adapterVersion, docsReviewedAt }),
-      makeSource({ agentId: "claude-code", scope: "user", kind: "settings", path: `${input.homeDir}/.claude/settings.json`, format: "json", precedence: 10, writeSupport: "safe-write", adapterVersion, docsReviewedAt })
+      makeSource({ agentId: "claude-code", scope: "user", kind: "settings", path: `${input.homeDir}/.claude/settings.json`, format: "json", precedence: 10, writeSupport: "safe-write", adapterVersion, docsReviewedAt }),
+      makeSource({ agentId: "claude-code", scope: "user", kind: "skills", path: `${input.homeDir}/.claude/skills`, format: "unknown", precedence: null, writeSupport: "read-only", adapterVersion, docsReviewedAt }),
+      makeSource({ agentId: "claude-code", scope: "user", kind: "plugins", path: `${input.homeDir}/.claude/plugins/installed_plugins.json`, format: "json", precedence: null, writeSupport: "read-only", adapterVersion, docsReviewedAt }),
+      makeSource({ agentId: "claude-code", scope: "user", kind: "plugins", path: `${input.homeDir}/.claude/plugins/known_marketplaces.json`, format: "json", precedence: null, writeSupport: "read-only", adapterVersion, docsReviewedAt }),
+      makeSource({ agentId: "claude-code", scope: "user", kind: "plugins", path: `${input.homeDir}/.claude/plugins/blocklist.json`, format: "json", precedence: null, writeSupport: "read-only", adapterVersion, docsReviewedAt })
     ];
     if (input.repoPath) {
       sources.push(makeSource({ agentId: "claude-code", scope: "repo", kind: "settings", path: `${input.repoPath}/.claude/settings.json`, format: "json", precedence: 30, writeSupport: "safe-write", adapterVersion, docsReviewedAt }));
       sources.push(makeSource({ agentId: "claude-code", scope: "local", kind: "settings", path: `${input.repoPath}/.claude/settings.local.json`, format: "json", precedence: 40, writeSupport: "safe-write", adapterVersion, docsReviewedAt }));
+      sources.push(makeSource({ agentId: "claude-code", scope: "repo", kind: "skills", path: `${input.repoPath}/.claude/skills`, format: "unknown", precedence: null, writeSupport: "read-only", adapterVersion, docsReviewedAt }));
+      sources.push(makeSource({ agentId: "claude-code", scope: "repo", kind: "plugins", path: `${input.repoPath}/.claude/plugins`, format: "unknown", precedence: null, writeSupport: "read-only", adapterVersion, docsReviewedAt }));
     }
     return sources;
   },
   parse(source: SourceFile): ParsedSource {
+    if (source.kind === "skills" || source.kind === "plugins") {
+      return { source, rules: [], diagnostics: [], unknownKeys: [], raw: source.content };
+    }
     if (!source.exists || source.content === null) {
       return { source, rules: [], diagnostics: [], unknownKeys: [], raw: null };
     }
@@ -75,7 +84,8 @@ export const claudeAdapter: AgentAdapter = {
       effective: this.computeEffective(rules),
       diagnostics,
       unknownCount: parsed.reduce((sum, item) => sum + item.unknownKeys.length, 0),
-      highRiskFindings: rules.filter((rule) => /bypass|danger/i.test(rule.raw)).map((rule) => `Claude Code risky setting: ${rule.raw}`)
+      highRiskFindings: rules.filter((rule) => /bypass|danger/i.test(rule.raw)).map((rule) => `Claude Code risky setting: ${rule.raw}`),
+      extensions: claudeExtensions(parsed.map((item) => item.source))
     };
   },
   computeEffective(rules) {
@@ -123,6 +133,27 @@ export const claudeAdapter: AgentAdapter = {
     return { ok: true, agentId: "claude-code", sourceId: source.id, path: source.path, actionLabel: input.actionLabel, before, after, diff: createLineDiff(before, after), willCreate: !source.exists, warnings, diagnostics: [] };
   }
 };
+
+function claudeExtensions(sources: SourceFile[]) {
+  return [
+    extensionConfig({
+      agentId: "claude-code",
+      kind: "skills",
+      label: "Claude skills",
+      configuration: "Skill directories are loaded from user-level and repo-level `.claude/skills` locations.",
+      notes: ["Repo skills can change agent behavior for this workspace, so they are shown separately from permission rules."],
+      sources: sources.filter((source) => source.kind === "skills")
+    }),
+    extensionConfig({
+      agentId: "claude-code",
+      kind: "plugins",
+      label: "Claude plugins",
+      configuration: "Plugin state is tracked through the user plugin manifests and optional repo plugin directory.",
+      notes: ["Installed plugin manifests, known marketplaces, and blocklists are read-only in this app."],
+      sources: sources.filter((source) => source.kind === "plugins")
+    })
+  ];
+}
 
 function configRule(sourceId: string, capability: PermissionRule["capability"], key: string, value: string): PermissionRule {
   return { id: `${sourceId}:config:${key}`, sourceId, capability, effect: "configure", raw: `${key} = ${value}`, label: key, explanation: `Claude Code configures ${key} as ${value}.`, confidence: "known", specificity: "global", diagnostics: [] };

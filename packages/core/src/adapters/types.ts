@@ -1,6 +1,7 @@
 import type { AgentId, DocumentationReference } from "../model/agent";
 import type { ChangePlan, PermissionIntentDefinition, PlanChangeInput } from "../model/change";
 import type { Diagnostic } from "../model/diagnostics";
+import type { AgentExtensionConfig } from "../model/extensions";
 import type { EffectivePermission, PermissionRule } from "../model/permission";
 import type { PermissionSource, SourceFile } from "../model/source";
 
@@ -28,6 +29,7 @@ export interface AgentSummary {
   diagnostics: Diagnostic[];
   unknownCount: number;
   highRiskFindings: string[];
+  extensions: AgentExtensionConfig[];
 }
 
 export interface AgentAdapter {

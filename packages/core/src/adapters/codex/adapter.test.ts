@@ -20,4 +20,18 @@ describe("codex adapter", () => {
     expect(plan.ok).toBe(true);
     expect(plan.after).toContain('approval_policy = "on-request"');
   });
+
+  it("surfaces repo skills and plugin marketplace metadata", () => {
+    const context = createDiscoveryContext({ homeDir: "/home/me", repoPath: "/repo", platform: "linux" });
+    const sources = codexAdapter.discover(context);
+    const skillSource = sources.find((item) => item.path === "/repo/.agents/skills")!;
+    const pluginSource = sources.find((item) => item.path === "/repo/.agents/plugins/marketplace.json")!;
+    const result = analyzeSources(context, [
+      { ...skillSource, exists: true, content: null },
+      { ...pluginSource, exists: true, content: "{}" }
+    ]);
+    const summary = result.summaries.find((item) => item.agentId === "openai-codex");
+    expect(summary?.extensions.map((item) => `${item.kind}:${item.status}`)).toContain("skills:configured");
+    expect(summary?.extensions.map((item) => `${item.kind}:${item.status}`)).toContain("plugins:configured");
+  });
 });

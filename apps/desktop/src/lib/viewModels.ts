@@ -1,4 +1,6 @@
 import type {
+  AgentExtensionConfig,
+  AgentExtensionStatus,
   AgentSummary,
   Capability,
   DiscoveryResult,
@@ -37,10 +39,25 @@ const kindLabels: Record<SourceFile["kind"], string> = {
   settings: "settings",
   permissions: "permissions",
   instructions: "instructions",
+  skills: "skills",
+  plugins: "plugins",
   mcp: "MCP config",
   "ide-settings": "IDE settings",
   "managed-policy": "managed policy",
   unknown: "config"
+};
+
+export const extensionKindLabels: Record<AgentExtensionConfig["kind"], string> = {
+  skills: "Skills",
+  plugins: "Plugins"
+};
+
+export const extensionStatusLabels: Record<AgentExtensionStatus, string> = {
+  configured: "Configured",
+  available: "Available",
+  "not-found": "Not found",
+  unsupported: "Unsupported",
+  unknown: "Unknown"
 };
 
 export function sourceScopeLabel(source: SourceFile): string {

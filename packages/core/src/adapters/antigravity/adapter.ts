@@ -1,7 +1,7 @@
 import type { AgentAdapter, AgentSummary, DiscoveryContext, ParsedSource } from "../types";
 import type { ChangePlan, PlanChangeInput } from "../../model/change";
 import type { SourceFile } from "../../model/source";
-import { effectiveFromRules } from "../common";
+import { effectiveFromRules, unsupportedExtension } from "../common";
 
 const adapterVersion = "0.1.0";
 const docsReviewedAt = "2026-04-16";
@@ -28,7 +28,11 @@ export const antigravityAdapter: AgentAdapter = {
       effective: this.computeEffective([]),
       diagnostics: [],
       unknownCount: 0,
-      highRiskFindings: []
+      highRiskFindings: [],
+      extensions: [
+        unsupportedExtension("antigravity", "skills", "Antigravity skills", "Antigravity skill configuration is not modeled by this adapter."),
+        unsupportedExtension("antigravity", "plugins", "Antigravity plugins", "Antigravity plugin configuration is not modeled by this adapter.")
+      ]
     };
   },
   computeEffective(rules) {

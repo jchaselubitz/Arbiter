@@ -2,6 +2,7 @@ import * as React from "react";
 import type { AgentSummary } from "@agent-permissions-editor/core";
 import type { AgentId } from "@agent-permissions-editor/core";
 import { FileCode2, AlertCircle } from "lucide-react";
+import { ExtensionMatrix } from "../../components/permission/ExtensionMatrix";
 import { PermissionMatrix } from "../../components/permission/PermissionMatrix";
 import { StatusPill } from "../../components/ui/status-pill";
 import { Card, CardHeader, CardTitle, CardContent } from "../../components/ui/card";
@@ -21,10 +22,10 @@ interface AgentDetailProps {
   onNavigateHome: () => void;
 }
 
-export type AgentDetailTab = "permissions" | "files" | "rules";
+export type AgentDetailTab = "permissions" | "extensions" | "files" | "rules";
 
 function isAgentDetailTab(value: string): value is AgentDetailTab {
-  return value === "permissions" || value === "files" || value === "rules";
+  return value === "permissions" || value === "extensions" || value === "files" || value === "rules";
 }
 
 function AgentDetail({ summary, activeTab, onTabChange, onSelectSource, onNavigateHome }: AgentDetailProps) {
@@ -74,7 +75,7 @@ function AgentDetail({ summary, activeTab, onTabChange, onSelectSource, onNaviga
         </div>
       )}
 
-      {/* Tabs: Permissions | Files | Rules */}
+      {/* Tabs: Permissions | Extensions | Files | Rules */}
       <Tabs
         value={activeTab}
         onValueChange={(value: string) => {
@@ -83,6 +84,7 @@ function AgentDetail({ summary, activeTab, onTabChange, onSelectSource, onNaviga
       >
         <TabsList>
           <TabsTrigger value="permissions">Permissions</TabsTrigger>
+          <TabsTrigger value="extensions">Skills & Plugins</TabsTrigger>
           <TabsTrigger value="files">Files ({summary.sources.length})</TabsTrigger>
           <TabsTrigger value="rules">Rules ({summary.rules.length})</TabsTrigger>
         </TabsList>
@@ -94,6 +96,16 @@ function AgentDetail({ summary, activeTab, onTabChange, onSelectSource, onNaviga
             </p>
           ) : (
             <PermissionMatrix summary={summary} />
+          )}
+        </TabsContent>
+
+        <TabsContent value="extensions" className="mt-4">
+          {summary.extensions.length === 0 ? (
+            <p className="text-sm text-zinc-500 dark:text-zinc-400 py-4">
+              No skill or plugin configuration surfaces are modeled for {summary.displayName}.
+            </p>
+          ) : (
+            <ExtensionMatrix summary={summary} onSelectSource={onSelectSource} />
           )}
         </TabsContent>
 

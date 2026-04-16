@@ -1,5 +1,6 @@
 import type { AgentId } from "../model/agent";
 import type { Diagnostic } from "../model/diagnostics";
+import type { AgentExtensionConfig, AgentExtensionKind, AgentExtensionStatus } from "../model/extensions";
 import type { Capability, EffectivePermission, PermissionRule, RuleEffect } from "../model/permission";
 import type { SourceFile, SourceFormat, SourceKind, PermissionScope, WriteSupport } from "../model/source";
 
@@ -107,6 +108,50 @@ export function collectDiagnostics(parsed: Array<{ diagnostics: Diagnostic[] }>)
   return parsed.flatMap((item) => item.diagnostics);
 }
 
+export function extensionConfig(args: {
+  agentId: AgentId;
+  kind: AgentExtensionKind;
+  label: string;
+  configuration: string;
+  notes: string[];
+  sources: SourceFile[];
+  statusWhenMissing?: AgentExtensionStatus;
+}): AgentExtensionConfig {
+  const existingSources = args.sources.filter((source) => source.exists);
+  const contributingSources = existingSources.length > 0 ? existingSources : args.sources;
+  const uniqueScopes = new Set(contributingSources.map((source) => source.scope));
+
+  return {
+    id: `${args.agentId}:${args.kind}:${slug(args.label)}`,
+    agentId: args.agentId,
+    kind: args.kind,
+    label: args.label,
+    status: existingSources.length > 0 ? "configured" : (args.statusWhenMissing ?? "available"),
+    confidence: args.sources.length > 0 ? "known" : "unknown",
+    scope: uniqueScopes.size === 1 ? [...uniqueScopes][0] : "mixed",
+    sourceIds: contributingSources.map((source) => source.id),
+    locations: contributingSources.map((source) => source.path),
+    configuration: args.configuration,
+    notes: args.notes
+  };
+}
+
+export function unsupportedExtension(agentId: AgentId, kind: AgentExtensionKind, label: string, note: string): AgentExtensionConfig {
+  return {
+    id: `${agentId}:${kind}:${slug(label)}`,
+    agentId,
+    kind,
+    label,
+    status: "unsupported",
+    confidence: "unknown",
+    scope: "unknown",
+    sourceIds: [],
+    locations: [],
+    configuration: "No supported configuration source is modeled for this agent yet.",
+    notes: [note]
+  };
+}
+
 export function arrayFromUnknown(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
 }
@@ -117,4 +162,8 @@ export function nestedObject(root: Record<string, unknown>, key: string): Record
   const next: Record<string, unknown> = {};
   root[key] = next;
   return next;
+}
+
+function slug(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 }

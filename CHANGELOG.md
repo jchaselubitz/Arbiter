@@ -1,11 +1,12 @@
 # Changelog
 
-## [0.2.0] - 2026-04-16:11:25
+## [0.3.0] - 2026-04-16:12:00
 
 ### Added
 - `Overview` screen with repo-aware agent cards, risk status, and high-risk findings display.
 - “Permit Bash Command” UI to preview and safely scope per-agent bash command writes.
-- “Open in Finder” button for quickly revealing writable config file locations on macOS.
+- “Open in Finder” / reveal-in-file-manager button (wired into agent, file, change review, and backup views).
+- Backups view for listing backups and revealing backup locations.
 - Unit tests for `AgentDetail` tab rendering and tab-change callback behavior.
 
 ### Fixed
@@ -13,10 +14,13 @@
 
 ### Changed
 - Refined the agent detail experience (tabs, diagnostics banner, file rows, and rules rendering).
-- Updated UI layout and supporting state management to support the expanded overview/detail flow.
+- Improved file detail UX with “Plan edit” sheet, parsed rules section, raw content view, and edit gating by write support.
+- Enhanced change review UX with multi-plan selection, warnings/diagnostics rendering, and sticky confirm/write actions.
+- Updated editor + UI state management to support planning/confirming writes, rehydrating workspace state, and persisting UI theme/sidebar state.
 
 ### Security
 - Scoped permitted bash command writes to safe-write settings sources (reducing accidental unsafe writes).
+- Native-side permission writes now validate the planned `beforeHash` and refuse writes outside known agent config paths; backups are created locally prior to atomic writes.
 
 ### Removed
 - None.

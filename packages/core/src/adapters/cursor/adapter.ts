@@ -1,5 +1,5 @@
 import type { AgentAdapter, AgentSummary, ParsedSource } from "../types";
-import { arrayFromUnknown, collectDiagnostics, effectiveFromRules, makeRule, makeSource, nestedObject } from "../common";
+import { arrayFromUnknown, collectDiagnostics, effectiveFromRules, extensionConfig, makeRule, makeSource, nestedObject, unsupportedExtension } from "../common";
 import type { ChangePlan, PlanChangeInput } from "../../model/change";
 import type { PermissionRule } from "../../model/permission";
 import type { SourceFile } from "../../model/source";
@@ -25,12 +25,14 @@ export const cursorAdapter: AgentAdapter = {
     if (input.repoPath) {
       sources.push(makeSource({ agentId: "cursor", scope: "repo", kind: "settings", path: `${input.repoPath}/.cursor/cli.json`, format: "json", precedence: 20, writeSupport: "safe-write", adapterVersion, docsReviewedAt }));
       sources.push(makeSource({ agentId: "cursor", scope: "repo", kind: "instructions", path: `${input.repoPath}/AGENTS.md`, format: "markdown", precedence: null, writeSupport: "read-only", adapterVersion, docsReviewedAt }));
+      sources.push(makeSource({ agentId: "cursor", scope: "repo", kind: "skills", path: `${input.repoPath}/.cursor/rules`, format: "unknown", precedence: null, writeSupport: "read-only", adapterVersion, docsReviewedAt }));
       sources.push(makeSource({ agentId: "cursor", scope: "repo", kind: "instructions", path: `${input.repoPath}/.cursorrules`, format: "markdown", precedence: null, writeSupport: "read-only", adapterVersion, docsReviewedAt }));
     }
     return sources;
   },
   parse(source: SourceFile): ParsedSource {
     if (!source.exists || source.content === null) return { source, rules: [], diagnostics: [], unknownKeys: [], raw: null };
+    if (source.kind === "skills" || source.kind === "plugins") return { source, rules: [], diagnostics: [], unknownKeys: [], raw: source.content };
     if (source.kind === "instructions") {
       const rule = makeRule(source.id, `Instructions(${source.path})`, "informational", 0, "Cursor instructions");
       rule.capability = "instructions.load";
@@ -48,7 +50,8 @@ export const cursorAdapter: AgentAdapter = {
   summarize(parsed: ParsedSource[]): AgentSummary {
     const rules = parsed.flatMap((item) => item.rules);
     const diagnostics = collectDiagnostics(parsed);
-    return { agentId: "cursor", displayName: "Cursor", status: diagnostics.some((item) => item.severity === "error") ? "parse-error" : parsed.some((item) => item.source.exists) ? "found" : "not-found", sources: parsed.map((item) => item.source), rules, effective: this.computeEffective(rules), diagnostics, unknownCount: parsed.reduce((sum, item) => sum + item.unknownKeys.length, 0), highRiskFindings: rules.filter((rule) => rule.effect === "allow" && /^Shell\((rm|curl|wget|sudo)/.test(rule.raw)).map((rule) => `Cursor allows risky shell token: ${rule.raw}`) };
+    const sources = parsed.map((item) => item.source);
+    return { agentId: "cursor", displayName: "Cursor", status: diagnostics.some((item) => item.severity === "error") ? "parse-error" : parsed.some((item) => item.source.exists) ? "found" : "not-found", sources, rules, effective: this.computeEffective(rules), diagnostics, unknownCount: parsed.reduce((sum, item) => sum + item.unknownKeys.length, 0), highRiskFindings: rules.filter((rule) => rule.effect === "allow" && /^Shell\((rm|curl|wget|sudo)/.test(rule.raw)).map((rule) => `Cursor allows risky shell token: ${rule.raw}`), extensions: cursorExtensions(sources) };
   },
   computeEffective(rules) {
     return effectiveFromRules("cursor", rules);
@@ -84,6 +87,20 @@ export const cursorAdapter: AgentAdapter = {
     return { ok: true, agentId: "cursor", sourceId: source.id, path: source.path, actionLabel: input.actionLabel, before, after, diff: createLineDiff(before, after), willCreate: !source.exists, warnings, diagnostics: [] };
   }
 };
+
+function cursorExtensions(sources: SourceFile[]) {
+  return [
+    extensionConfig({
+      agentId: "cursor",
+      kind: "skills",
+      label: "Cursor rules",
+      configuration: "Cursor uses repo rules under `.cursor/rules` rather than this app's Codex/Claude-style skill folders.",
+      notes: ["Rules are instruction-like context and are shown here as the closest Cursor equivalent to skills."],
+      sources: sources.filter((source) => source.kind === "skills")
+    }),
+    unsupportedExtension("cursor", "plugins", "Cursor plugins", "Cursor plugin configuration is not modeled by this adapter.")
+  ];
+}
 
 function validateTokens(rules: PermissionRule[], path: string) {
   return rules

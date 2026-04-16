@@ -21,4 +21,18 @@ describe("claude adapter", () => {
     expect(plan.ok).toBe(true);
     expect(plan.after).toContain('"Bash(npm test)"');
   });
+
+  it("summarizes configured skills and plugins separately from permissions", () => {
+    const context = createDiscoveryContext({ homeDir: "/home/me", repoPath: "/repo", platform: "linux" });
+    const sources = claudeAdapter.discover(context);
+    const skillSource = sources.find((item) => item.path === "/repo/.claude/skills")!;
+    const pluginSource = sources.find((item) => item.path === "/home/me/.claude/plugins/installed_plugins.json")!;
+    const result = analyzeSources(context, [
+      { ...skillSource, exists: true, content: null },
+      { ...pluginSource, exists: true, content: "{}" }
+    ]);
+    const summary = result.summaries.find((item) => item.agentId === "claude-code");
+    expect(summary?.extensions.find((item) => item.kind === "skills")?.status).toBe("configured");
+    expect(summary?.extensions.find((item) => item.kind === "plugins")?.status).toBe("configured");
+  });
 });

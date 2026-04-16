@@ -1,5 +1,5 @@
 import type { AgentAdapter, AgentSummary, ParsedSource } from "../types";
-import { collectDiagnostics, effectiveFromRules, makeRule, makeSource } from "../common";
+import { collectDiagnostics, effectiveFromRules, extensionConfig, makeRule, makeSource } from "../common";
 import type { PermissionRule } from "../../model/permission";
 import type { SourceFile } from "../../model/source";
 import type { ChangePlan, PlanChangeInput } from "../../model/change";
@@ -22,16 +22,21 @@ export const codexAdapter: AgentAdapter = {
     const sources = [
       makeSource({ agentId: "openai-codex", scope: "user", kind: "settings", path: `${input.homeDir}/.codex/config.toml`, format: "toml", precedence: 10, writeSupport: "partial", adapterVersion, docsReviewedAt }),
       makeSource({ agentId: "openai-codex", scope: "user", kind: "instructions", path: `${input.homeDir}/.codex/AGENTS.md`, format: "markdown", precedence: null, writeSupport: "read-only", adapterVersion, docsReviewedAt }),
-      makeSource({ agentId: "openai-codex", scope: "user", kind: "instructions", path: `${input.homeDir}/.codex/AGENTS.override.md`, format: "markdown", precedence: null, writeSupport: "read-only", adapterVersion, docsReviewedAt })
+      makeSource({ agentId: "openai-codex", scope: "user", kind: "instructions", path: `${input.homeDir}/.codex/AGENTS.override.md`, format: "markdown", precedence: null, writeSupport: "read-only", adapterVersion, docsReviewedAt }),
+      makeSource({ agentId: "openai-codex", scope: "user", kind: "skills", path: `${input.homeDir}/.codex/skills`, format: "unknown", precedence: null, writeSupport: "read-only", adapterVersion, docsReviewedAt }),
+      makeSource({ agentId: "openai-codex", scope: "user", kind: "plugins", path: `${input.homeDir}/.codex/plugins`, format: "unknown", precedence: null, writeSupport: "read-only", adapterVersion, docsReviewedAt })
     ];
     if (input.repoPath) {
       sources.push(makeSource({ agentId: "openai-codex", scope: "repo", kind: "instructions", path: `${input.repoPath}/AGENTS.md`, format: "markdown", precedence: null, writeSupport: "read-only", adapterVersion, docsReviewedAt }));
       sources.push(makeSource({ agentId: "openai-codex", scope: "repo", kind: "instructions", path: `${input.repoPath}/AGENTS.override.md`, format: "markdown", precedence: null, writeSupport: "read-only", adapterVersion, docsReviewedAt }));
+      sources.push(makeSource({ agentId: "openai-codex", scope: "repo", kind: "skills", path: `${input.repoPath}/.agents/skills`, format: "unknown", precedence: null, writeSupport: "read-only", adapterVersion, docsReviewedAt }));
+      sources.push(makeSource({ agentId: "openai-codex", scope: "repo", kind: "plugins", path: `${input.repoPath}/.agents/plugins/marketplace.json`, format: "json", precedence: null, writeSupport: "read-only", adapterVersion, docsReviewedAt }));
     }
     return sources;
   },
   parse(source: SourceFile): ParsedSource {
     if (!source.exists || source.content === null) return { source, rules: [], diagnostics: [], unknownKeys: [], raw: null };
+    if (source.kind === "skills" || source.kind === "plugins") return { source, rules: [], diagnostics: [], unknownKeys: [], raw: source.content };
     if (source.kind === "instructions") {
       const rule = makeRule(source.id, `Instructions(${source.path})`, "informational", 0, "Codex instructions");
       rule.capability = "instructions.load";
@@ -51,7 +56,8 @@ export const codexAdapter: AgentAdapter = {
   summarize(parsed: ParsedSource[]): AgentSummary {
     const rules = parsed.flatMap((item) => item.rules);
     const diagnostics = collectDiagnostics(parsed);
-    return { agentId: "openai-codex", displayName: "OpenAI Codex", status: diagnostics.some((item) => item.severity === "error") ? "parse-error" : parsed.some((item) => item.source.exists) ? "found" : "not-found", sources: parsed.map((item) => item.source), rules, effective: this.computeEffective(rules), diagnostics, unknownCount: parsed.reduce((sum, item) => sum + item.unknownKeys.length, 0), highRiskFindings: rules.filter((rule) => /danger-full-access|approval_policy = never|network_access = true/.test(rule.raw)).map((rule) => `Codex high-risk setting: ${rule.raw}`) };
+    const sources = parsed.map((item) => item.source);
+    return { agentId: "openai-codex", displayName: "OpenAI Codex", status: diagnostics.some((item) => item.severity === "error") ? "parse-error" : parsed.some((item) => item.source.exists) ? "found" : "not-found", sources, rules, effective: this.computeEffective(rules), diagnostics, unknownCount: parsed.reduce((sum, item) => sum + item.unknownKeys.length, 0), highRiskFindings: rules.filter((rule) => /danger-full-access|approval_policy = never|network_access = true/.test(rule.raw)).map((rule) => `Codex high-risk setting: ${rule.raw}`), extensions: codexExtensions(sources) };
   },
   computeEffective(rules) {
     return effectiveFromRules("openai-codex", rules);
@@ -71,6 +77,27 @@ export const codexAdapter: AgentAdapter = {
     return { ok: true, agentId: "openai-codex", sourceId: source.id, path: source.path, actionLabel: input.actionLabel, before, after, diff: createLineDiff(before, after), willCreate: true, warnings, diagnostics: [] };
   }
 };
+
+function codexExtensions(sources: SourceFile[]) {
+  return [
+    extensionConfig({
+      agentId: "openai-codex",
+      kind: "skills",
+      label: "Codex skills",
+      configuration: "Codex skills are read from user-level `.codex/skills` and repo-managed `.agents/skills` locations when present.",
+      notes: ["Repo skills are behavior instructions, so they are visible here without being treated as permissions."],
+      sources: sources.filter((source) => source.kind === "skills")
+    }),
+    extensionConfig({
+      agentId: "openai-codex",
+      kind: "plugins",
+      label: "Codex plugins",
+      configuration: "Plugin discovery is represented by user-level `.codex/plugins` and repo marketplace metadata under `.agents/plugins`.",
+      notes: ["Plugin manifests can expose skills, apps, and MCP servers; this app currently inspects their configured locations only."],
+      sources: sources.filter((source) => source.kind === "plugins")
+    })
+  ];
+}
 
 function addConfigRule(rules: PermissionRule[], sourceId: string, capability: PermissionRule["capability"], key: string, value: unknown, specificity: PermissionRule["specificity"] = "global") {
   if (value === undefined) return;
