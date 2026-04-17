@@ -1,5 +1,5 @@
 import * as React from "react";
-import type { AgentExtensionConfig, AgentSummary } from "@agent-permissions-editor/core";
+import type { AgentExtensionConfig, AgentSummary } from "@arbiter/core";
 import { Badge } from "../ui/badge";
 import { StatusPill } from "../ui/status-pill";
 import { extensionKindLabels, extensionStatusLabels, sourceScopeLabel } from "../../lib/viewModels";

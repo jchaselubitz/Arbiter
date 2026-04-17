@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import type { AgentId } from "@agent-permissions-editor/core";
-import { adapters } from "@agent-permissions-editor/core";
+import type { AgentId } from "@arbiter/core";
+import { adapters } from "@arbiter/core";
 import { AppShell } from "../components/layout/AppShell";
 import { ErrorBoundary } from "../components/ErrorBoundary";
 import { AgentDetail, type AgentDetailTab } from "../features/agent-detail/AgentDetail";
@@ -16,11 +16,13 @@ import { useEditorStore } from "../stores/useEditorStore";
 import { useUIStore, initTheme } from "../stores/useUIStore";
 import { useShortcuts } from "../lib/shortcuts";
 import { getRuntimeContext } from "../lib/tauriClient";
+import { usePeriodicUpdateCheck } from "../lib/usePeriodicUpdateCheck";
 import type { RouteId } from "./routes";
 
 export function App() {
+  usePeriodicUpdateCheck();
   const { result, repoPath, selectedAgentId, backups, hydrationStatus, error, rehydrate, chooseRepo, selectAgent } = useWorkspaceStore();
-  const { plan, plans, saving, error: editorError, selectSource, planEdit, planPermittedBashCommand, confirmWrite, discardPlan } = useEditorStore();
+  const { plan, plans, saving, error: editorError, selectSource, planEdit, planPermittedBashCommands, confirmWrite, discardPlan } = useEditorStore();
   const { route, setRoute, recentRepos, addRecentRepo, setLastAgentForRepo } = useUIStore();
 
   // Platform detection for vibrancy/traffic-lights
@@ -33,7 +35,7 @@ export function App() {
     void rehydrate(null);
     getRuntimeContext()
       .then((ctx) => setPlatform(ctx.platform))
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   // Show error toasts
@@ -133,10 +135,6 @@ export function App() {
             loading={loading}
             onSelectAgent={(id) => { handleSelectAgent(id); setRoute("agents"); }}
             onChooseRepo={handleChooseRepo}
-            onPermitBashCommand={(agentIds, command) => {
-              planPermittedBashCommand(agentIds, command);
-              setRoute("change-review");
-            }}
           />
         );
       case "agents":
@@ -178,6 +176,7 @@ export function App() {
             error={editorError}
             onWrite={async () => {
               await confirmWrite();
+              toast.success("Config updated — files reloaded from disk.");
               setRoute("backups");
             }}
             onDiscard={() => {
@@ -210,6 +209,7 @@ export function App() {
         recentRepos={recentRepos}
         summaries={summaries}
         selectedAgentId={selectedAgentId}
+        result={result}
         route={route}
         onRoute={(r: RouteId) => setRoute(r)}
         onChooseRepo={handleChooseRepo}
@@ -217,6 +217,12 @@ export function App() {
         onSelectAgent={handleSelectAgent}
         onGoBack={handleGoBack}
         canGoBack={backRoute !== null}
+        onPermitBashCommands={(agentIds, commands, label) => {
+          planPermittedBashCommands(agentIds, commands, label);
+          setRoute("change-review");
+        }}
+        onRefresh={() => void rehydrate()}
+        isRefreshing={hydrationStatus === "loading"}
         platform={platform ?? undefined}
       >
         <ErrorBoundary>

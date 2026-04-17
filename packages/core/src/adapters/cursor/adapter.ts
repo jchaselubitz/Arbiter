@@ -9,6 +9,9 @@ import { createLineDiff } from "../../planning/diff";
 const adapterVersion = "0.1.0";
 const docsReviewedAt = "2026-04-15";
 
+/** Cursor CLI `permissions.allow` / `permissions.deny` token shapes this adapter models. */
+const CURSOR_PERMISSION_TOKEN_RE = /^(Shell|Read|Write|Mcp)\(.+\)$/;
+
 export const cursorAdapter: AgentAdapter = {
   id: "cursor",
   displayName: "Cursor",
@@ -73,7 +76,13 @@ export const cursorAdapter: AgentAdapter = {
     const key = input.intent.endsWith("allow-rule") ? "allow" : input.intent.endsWith("deny-rule") ? "deny" : null;
     if (!key) return refused(input, source, before, "Unsupported Cursor change intent.");
     const token = String(input.value);
-    if (!/^(Shell|Read|Write)\(.+\)$/.test(token)) return refused(input, source, before, "Cursor permission tokens must use Shell(...), Read(...), or Write(...).");
+    if (!CURSOR_PERMISSION_TOKEN_RE.test(token))
+      return refused(
+        input,
+        source,
+        before,
+        "Cursor permission tokens must use Shell(...), Read(...), Write(...), or Mcp(...)."
+      );
     const values = arrayFromUnknown(permissions[key]);
     const warnings: string[] = [];
     if (input.intent.startsWith("add-")) {
@@ -104,7 +113,7 @@ function cursorExtensions(sources: SourceFile[]) {
 
 function validateTokens(rules: PermissionRule[], path: string) {
   return rules
-    .filter((rule) => rule.effect !== "informational" && !/^(Shell|Read|Write)\(.+\)$/.test(rule.raw))
+    .filter((rule) => rule.effect !== "informational" && !CURSOR_PERMISSION_TOKEN_RE.test(rule.raw))
     .map((rule) => ({ severity: "warning" as const, message: `Unsupported Cursor permission token: ${rule.raw}`, path, code: "cursor-token" }));
 }
 

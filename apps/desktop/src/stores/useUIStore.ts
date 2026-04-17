@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { RouteId } from "../app/routes";
-import type { AgentId } from "@agent-permissions-editor/core";
+import type { AgentId } from "@arbiter/core";
 
 type Theme = "light" | "dark" | "system";
 
@@ -74,19 +74,25 @@ export const useUIStore = create<UIState & UIActions>()(
       addRecentRepo: (repoPath) => {
         set((s) => ({
           lastRepoPath: repoPath,
-          recentRepos: [repoPath, ...s.recentRepos.filter((r) => r !== repoPath)].slice(0, 5)
+          recentRepos: [
+            repoPath,
+            ...s.recentRepos.filter((r) => r !== repoPath),
+          ].slice(0, 5),
         }));
       },
 
       setLastAgentForRepo: (repoPath, agentId) => {
         set((s) => ({
-          lastSelectedAgentIdByRepo: { ...s.lastSelectedAgentIdByRepo, [repoPath]: agentId }
+          lastSelectedAgentIdByRepo: {
+            ...s.lastSelectedAgentIdByRepo,
+            [repoPath]: agentId,
+          },
         }));
       },
 
       getLastAgentForRepo: (repoPath) => {
         return get().lastSelectedAgentIdByRepo[repoPath] ?? null;
-      }
+      },
     }),
     {
       name: PERSIST_KEY,
@@ -95,17 +101,18 @@ export const useUIStore = create<UIState & UIActions>()(
         sidebarCollapsed: state.sidebarCollapsed,
         recentRepos: state.recentRepos,
         lastRepoPath: state.lastRepoPath,
-        lastSelectedAgentIdByRepo: state.lastSelectedAgentIdByRepo
-      })
-    }
-  )
+        lastSelectedAgentIdByRepo: state.lastSelectedAgentIdByRepo,
+      }),
+    },
+  ),
 );
 
 export function applyTheme(theme: Theme) {
   const root = document.documentElement;
   const isDark =
     theme === "dark" ||
-    (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    (theme === "system" &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches);
   root.classList.toggle("dark", isDark);
 }
 

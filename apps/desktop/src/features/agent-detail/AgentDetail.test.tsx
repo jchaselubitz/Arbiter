@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { render } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import type { AgentSummary } from "@agent-permissions-editor/core";
+import type { AgentSummary } from "@arbiter/core";
 import { AgentDetail } from "./AgentDetail";
 
 const summary: AgentSummary = {

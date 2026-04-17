@@ -1,5 +1,5 @@
 import * as React from "react";
-import type { AgentSummary, EffectivePermission } from "@agent-permissions-editor/core";
+import type { AgentSummary, EffectivePermission } from "@arbiter/core";
 import { Info } from "lucide-react";
 import { StatusPill } from "../ui/status-pill";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";

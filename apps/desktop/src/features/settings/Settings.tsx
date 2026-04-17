@@ -1,10 +1,19 @@
 import * as React from "react";
 import { Moon, Sun, Monitor } from "lucide-react";
+import { toast } from "sonner";
 import { Card, CardHeader, CardTitle, CardContent } from "../../components/ui/card";
 import { Separator } from "../../components/ui/separator";
 import { Kbd } from "../../components/ui/kbd";
+import { Button } from "../../components/ui/button";
 import { useUIStore } from "../../stores/useUIStore";
 import { cn } from "../../lib/cn";
+import type { Update } from "../../lib/updaterClient";
+import {
+  checkForUpdate,
+  downloadUpdate,
+  getAppVersion,
+  installDownloadedUpdateAndRelaunch
+} from "../../lib/updaterClient";
 
 type Theme = "light" | "dark" | "system";
 
@@ -23,6 +32,75 @@ const shortcuts = [
 
 function Settings() {
   const { theme, setTheme } = useUIStore();
+  const [appVersion, setAppVersion] = React.useState<string>("…");
+  const [availableUpdate, setAvailableUpdate] = React.useState<Update | null>(null);
+  const [downloadReady, setDownloadReady] = React.useState(false);
+  const [busyAction, setBusyAction] = React.useState<"check" | "download" | "install" | null>(null);
+
+  React.useEffect(() => {
+    void getAppVersion()
+      .then((v) => setAppVersion(v))
+      .catch(() => setAppVersion("unknown"));
+  }, []);
+
+  React.useEffect(() => {
+    return () => {
+      if (availableUpdate) {
+        void availableUpdate.close();
+      }
+    };
+  }, [availableUpdate]);
+
+  async function handleCheckForUpdates() {
+    setBusyAction("check");
+    try {
+      if (availableUpdate) {
+        await availableUpdate.close();
+        setAvailableUpdate(null);
+      }
+      setDownloadReady(false);
+      const result = await checkForUpdate();
+      if (result.kind === "no-update") {
+        toast.success("You are on the latest version.");
+        return;
+      }
+      setAvailableUpdate(result.update);
+      toast.message(`Update available: ${result.update.version}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Update check failed");
+    } finally {
+      setBusyAction(null);
+    }
+  }
+
+  async function handleDownloadUpdate() {
+    if (!availableUpdate) {
+      return;
+    }
+    setBusyAction("download");
+    try {
+      await downloadUpdate({ update: availableUpdate });
+      setDownloadReady(true);
+      toast.success("Update downloaded. Click Install to restart and apply.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Download failed");
+    } finally {
+      setBusyAction(null);
+    }
+  }
+
+  async function handleInstallUpdate() {
+    if (!availableUpdate) {
+      return;
+    }
+    setBusyAction("install");
+    try {
+      await installDownloadedUpdateAndRelaunch({ update: availableUpdate });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Install failed");
+      setBusyAction(null);
+    }
+  }
 
   return (
     <div className="p-6 space-y-6 max-w-2xl">
@@ -94,6 +172,41 @@ function Settings() {
             Arbiter is a local-first desktop editor for AI agent permission files. No background
             service is required — changes are written directly to native config files.
           </p>
+          <Separator className="my-4" />
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+              <span className="text-sm font-medium text-zinc-700 dark:text-zinc-200">Version</span>
+              <span className="text-sm tabular-nums text-zinc-600 dark:text-zinc-300">{appVersion}</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                disabled={busyAction !== null}
+                onClick={() => void handleCheckForUpdates()}
+              >
+                {busyAction === "check" ? "Checking…" : "Check for updates"}
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                disabled={!availableUpdate || busyAction !== null}
+                onClick={() => void handleDownloadUpdate()}
+              >
+                {busyAction === "download" ? "Downloading…" : "Download update"}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                disabled={!availableUpdate || !downloadReady || busyAction !== null}
+                onClick={() => void handleInstallUpdate()}
+              >
+                {busyAction === "install" ? "Installing…" : "Install update"}
+              </Button>
+            </div>
+          </div>
           <Separator className="my-4" />
           <p className="text-xs text-zinc-400 dark:text-zinc-500">
             Manual documentation checks and external editor integration are intentionally not

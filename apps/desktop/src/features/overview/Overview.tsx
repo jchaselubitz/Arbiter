@@ -1,24 +1,14 @@
 import * as React from "react";
-import type { DiscoveryResult, AgentSummary } from "@agent-permissions-editor/core";
-import type { AgentId } from "@agent-permissions-editor/core";
-import { adapters } from "@agent-permissions-editor/core";
-import { AlertTriangle, TerminalSquare, FolderOpen, ChevronRight } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
+import type { DiscoveryResult, AgentSummary } from "@arbiter/core";
+import type { AgentId } from "@arbiter/core";
+import { adapters } from "@arbiter/core";
+import { AlertTriangle, FolderOpen, ChevronRight } from "lucide-react";
 import { StatusPill } from "../../components/ui/status-pill";
 import { Skeleton } from "../../components/ui/skeleton";
 import { Button } from "../../components/ui/button";
-import { Checkbox } from "../../components/ui/checkbox";
-import { Input } from "../../components/ui/input";
-import { Label } from "../../components/ui/label";
 import { AgentIcon } from "../../components/layout/AgentSwitcher";
 import { riskLevel, agentStatus } from "../../lib/viewModels";
 import { cn } from "../../lib/cn";
-import {
-  getPermittedBashCommandTarget,
-  permittedBashCommandLabel,
-  permittedBashCommandValue,
-  supportsPermittedBashCommands
-} from "../../lib/permittedBashCommands";
 
 interface OverviewProps {
   result: DiscoveryResult | null;
@@ -26,10 +16,9 @@ interface OverviewProps {
   loading?: boolean;
   onSelectAgent: (agentId: AgentId) => void;
   onChooseRepo: () => void;
-  onPermitBashCommand: (agentIds: AgentId[], command: string) => void;
 }
 
-function Overview({ result, repoPath, loading = false, onSelectAgent, onChooseRepo, onPermitBashCommand }: OverviewProps) {
+function Overview({ result, repoPath, loading = false, onSelectAgent, onChooseRepo }: OverviewProps) {
   if (loading) return <OverviewSkeleton />;
 
   if (!result) {
@@ -89,8 +78,6 @@ function Overview({ result, repoPath, loading = false, onSelectAgent, onChooseRe
         </div>
       )}
 
-      <PermitBashCommandCard result={result} onPermitBashCommand={onPermitBashCommand} />
-
       {/* Agent cards grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {adapters.map((adapter) => {
@@ -106,137 +93,6 @@ function Overview({ result, repoPath, loading = false, onSelectAgent, onChooseRe
         })}
       </div>
     </div>
-  );
-}
-
-function PermitBashCommandCard({
-  result,
-  onPermitBashCommand
-}: {
-  result: DiscoveryResult;
-  onPermitBashCommand: (agentIds: AgentId[], command: string) => void;
-}) {
-  const [command, setCommand] = React.useState("");
-  const [selectedAgentIds, setSelectedAgentIds] = React.useState<AgentId[]>([]);
-  const summariesByAgent = React.useMemo(() => new Map(result.summaries.map((summary) => [summary.agentId, summary])), [result]);
-  const targets = React.useMemo(
-    () =>
-      result.summaries
-        .filter((summary) => supportsPermittedBashCommands(summary.agentId))
-        .map((summary) => ({ summary, source: getPermittedBashCommandTarget(summary) })),
-    [result]
-  );
-  const selectableIds = targets.filter((target) => target.source).map((target) => target.summary.agentId);
-
-  React.useEffect(() => {
-    setSelectedAgentIds((current) => current.filter((agentId) => selectableIds.includes(agentId)));
-  }, [selectableIds.join("|")]);
-
-  function toggleAgent(agentId: AgentId, checked: boolean | "indeterminate") {
-    setSelectedAgentIds((current) => {
-      if (checked === true) return current.includes(agentId) ? current : [...current, agentId];
-      return current.filter((id) => id !== agentId);
-    });
-  }
-
-  function submit(e: React.FormEvent) {
-    e.preventDefault();
-    const trimmed = command.trim();
-    if (!trimmed || selectedAgentIds.length === 0) return;
-    onPermitBashCommand(selectedAgentIds, trimmed);
-    setCommand("");
-  }
-
-  return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <TerminalSquare className="h-4 w-4 text-[#1d7f68] dark:text-[#3dd6aa]" aria-hidden />
-          <CardTitle>Permit Bash Command</CardTitle>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={submit} className="space-y-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="permitted-bash-command">Command</Label>
-            <Input
-              id="permitted-bash-command"
-              value={command}
-              onChange={(e) => setCommand(e.target.value)}
-              placeholder="npm test"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-600">
-              Agents
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {adapters.map((adapter) => {
-                const agentId = adapter.id as AgentId;
-                const summary = summariesByAgent.get(agentId);
-                const target = summary ? getPermittedBashCommandTarget(summary) : null;
-                const supported = supportsPermittedBashCommands(agentId);
-                const disabled = !supported || !target;
-                const preview = supported && command.trim() ? permittedBashCommandValue(agentId, command) : null;
-                return (
-                  <label
-                    key={agentId}
-                    className={cn(
-                      "flex items-start gap-3 rounded-lg border p-3",
-                      disabled
-                        ? "border-zinc-100 bg-zinc-50 opacity-60 dark:border-zinc-800 dark:bg-zinc-950"
-                        : "border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900"
-                    )}
-                  >
-                    <Checkbox
-                      checked={selectedAgentIds.includes(agentId)}
-                      onCheckedChange={(checked: boolean | "indeterminate") => toggleAgent(agentId, checked)}
-                      disabled={disabled}
-                      className="mt-0.5"
-                    />
-                    <span className="min-w-0 flex-1">
-                      <span className="flex items-center gap-2">
-                        <AgentIcon agentId={agentId} detected={!!summary && summary.status !== "not-found"} size={18} />
-                        <span className="text-sm font-medium text-zinc-800 dark:text-zinc-100">
-                          {permittedBashCommandLabel(agentId)}
-                        </span>
-                      </span>
-                      {target && (
-                        <span className="mt-1 block truncate font-mono text-xs text-zinc-500 dark:text-zinc-400">
-                          {target.path}
-                        </span>
-                      )}
-                      {!supported && (
-                        <span className="mt-1 block text-xs text-zinc-500 dark:text-zinc-400">
-                          Per-command bash allow is not supported by this writer.
-                        </span>
-                      )}
-                      {supported && !target && (
-                        <span className="mt-1 block text-xs text-zinc-500 dark:text-zinc-400">
-                          No writable settings file is available.
-                        </span>
-                      )}
-                      {preview && (
-                        <code className="mt-1 block truncate text-xs text-zinc-500 dark:text-zinc-400">
-                          {preview}
-                        </code>
-                      )}
-                    </span>
-                  </label>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="flex justify-end">
-            <Button type="submit" disabled={!command.trim() || selectedAgentIds.length === 0}>
-              Preview changes
-            </Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
   );
 }
 

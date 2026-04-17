@@ -1,5 +1,5 @@
 {
-  "name": "@agent-permissions-editor/docs-checker",
+  "name": "@arbiter/docs-checker",
   "version": "0.1.0",
   "private": true,
   "type": "module",

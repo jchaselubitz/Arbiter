@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Toaster } from "sonner";
-import type { AgentId, AgentSummary } from "@agent-permissions-editor/core";
+import type { AgentId, AgentSummary, DiscoveryResult } from "@arbiter/core";
 import type { RouteId } from "../../app/routes";
 import { AppHeader } from "./AppHeader";
 import { AppSidebar } from "./AppSidebar";
@@ -11,6 +11,7 @@ interface AppShellProps {
   recentRepos: string[];
   summaries: AgentSummary[];
   selectedAgentId: AgentId | null;
+  result: DiscoveryResult | null;
   route: RouteId;
   onRoute: (route: RouteId) => void;
   onGoBack: () => void;
@@ -18,6 +19,9 @@ interface AppShellProps {
   onChooseRepo: () => void;
   onSelectRecent: (path: string) => void;
   onSelectAgent: (agentId: AgentId) => void;
+  onPermitBashCommands: (agentIds: AgentId[], commands: string[], label: string) => void;
+  onRefresh: () => void;
+  isRefreshing?: boolean;
   platform?: string;
   children: React.ReactNode;
 }
@@ -27,6 +31,7 @@ function AppShell({
   recentRepos,
   summaries,
   selectedAgentId,
+  result,
   route,
   onRoute,
   onGoBack,
@@ -34,6 +39,9 @@ function AppShell({
   onChooseRepo,
   onSelectRecent,
   onSelectAgent,
+  onPermitBashCommands,
+  onRefresh,
+  isRefreshing,
   platform,
   children
 }: AppShellProps) {
@@ -47,12 +55,15 @@ function AppShell({
         recentRepos={recentRepos}
         summaries={summaries}
         selectedAgentId={selectedAgentId}
+        result={result}
         onChooseRepo={onChooseRepo}
         onSelectRecent={onSelectRecent}
         onSelectAgent={onSelectAgent}
         onGoBack={onGoBack}
         canGoBack={canGoBack}
-        onOpenSettings={() => onRoute("settings")}
+        onPermitBashCommands={onPermitBashCommands}
+        onRefresh={onRefresh}
+        isRefreshing={isRefreshing}
         platform={platform}
       />
       <div className="flex flex-1 min-h-0">
@@ -67,7 +78,7 @@ function AppShell({
           {children}
         </main>
       </div>
-      <Toaster position="bottom-right" richColors closeButton />
+      <Toaster position="bottom-left" richColors closeButton />
     </div>
   );
 }

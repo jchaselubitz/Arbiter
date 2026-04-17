@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useState } from "react";
-import type { BackupRecord } from "@agent-permissions-editor/core";
+import type { BackupRecord } from "@arbiter/core";
 import { Archive, Clock } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "../../components/ui/dialog";

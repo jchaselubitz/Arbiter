@@ -1,6 +1,6 @@
 import * as React from "react";
-import type { AgentSummary } from "@agent-permissions-editor/core";
-import type { AgentId } from "@agent-permissions-editor/core";
+import type { AgentSummary } from "@arbiter/core";
+import type { AgentId } from "@arbiter/core";
 import { FileCode2, AlertCircle } from "lucide-react";
 import { ExtensionMatrix } from "../../components/permission/ExtensionMatrix";
 import { PermissionMatrix } from "../../components/permission/PermissionMatrix";

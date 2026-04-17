@@ -1,5 +1,5 @@
 import * as React from "react";
-import type { ChangePlan } from "@agent-permissions-editor/core";
+import type { ChangePlan } from "@arbiter/core";
 import { AlertTriangle, AlertCircle, CheckCircle2, GitCommit } from "lucide-react";
 import { DiffView } from "../../components/diff/DiffView";
 import { Button } from "../../components/ui/button";
@@ -26,7 +26,7 @@ function ChangeReview({ plan, plans = [], saving, error, onWrite, onDiscard, onN
 
   React.useEffect(() => {
     setActivePlanIndex(0);
-  }, [pendingPlans.map((item) => item.sourceId).join("|")]);
+  }, [pendingPlans.map((item) => `${item.sourceId}:${item.actionLabel}`).join("|")]);
 
   useShortcuts(
     canWrite
@@ -79,14 +79,13 @@ function ChangeReview({ plan, plans = [], saving, error, onWrite, onDiscard, onN
         <div className="flex flex-wrap gap-2">
           {pendingPlans.map((nextPlan, index) => (
             <button
-              key={nextPlan.sourceId}
+              key={`${nextPlan.sourceId}:${index}`}
               type="button"
               onClick={() => setActivePlanIndex(index)}
-              className={`rounded-md border px-3 py-2 text-left text-xs ${
-                index === activePlanIndex
+              className={`rounded-md border px-3 py-2 text-left text-xs ${index === activePlanIndex
                   ? "border-[#1d7f68] bg-[#e9f7f3] text-[#175f4e] dark:border-[#3dd6aa] dark:bg-[#102c25] dark:text-[#9ff0d9]"
                   : "border-zinc-200 bg-white text-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400"
-              }`}
+                }`}
             >
               <span className="block font-medium">{nextPlan.agentId}</span>
               <span className="block max-w-52 truncate font-mono">{nextPlan.path}</span>

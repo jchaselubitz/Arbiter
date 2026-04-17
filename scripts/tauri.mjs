@@ -8,10 +8,12 @@ const needsRust = new Set(["build", "dev", "android", "ios"]);
 function hasCommand(name) {
   const lookup = process.platform === "win32" ? "where" : "command";
   const lookupArgs = process.platform === "win32" ? [name] : ["-v", name];
-  return spawnSync(lookup, lookupArgs, {
-    shell: process.platform !== "win32",
-    stdio: "ignore",
-  }).status === 0;
+  return (
+    spawnSync(lookup, lookupArgs, {
+      shell: process.platform !== "win32",
+      stdio: "ignore",
+    }).status === 0
+  );
 }
 
 if (needsRust.has(command) && !hasCommand("cargo")) {
@@ -29,10 +31,14 @@ if (needsRust.has(command) && !hasCommand("cargo")) {
   process.exit(1);
 }
 
-const result = spawnSync("npm", ["run", "tauri", "-w", "@agent-permissions-editor/desktop", "--", ...args], {
-  stdio: "inherit",
-  shell: process.platform === "win32",
-});
+const result = spawnSync(
+  "npm",
+  ["run", "tauri", "-w", "@arbiter/desktop", "--", ...args],
+  {
+    stdio: "inherit",
+    shell: process.platform === "win32",
+  },
+);
 
 if (result.error) {
   console.error(result.error.message);

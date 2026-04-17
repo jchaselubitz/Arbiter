@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
-import type { BackupRecord, SourceFile } from "@agent-permissions-editor/core";
+import type { BackupRecord, SourceFile } from "@arbiter/core";
 
 export interface RuntimeContextDto {
   homeDir: string;
@@ -45,15 +45,23 @@ export async function getRuntimeContext(): Promise<RuntimeContextDto> {
 }
 
 export async function chooseRepository(): Promise<string | null> {
-  const selected = await open({ directory: true, multiple: false, title: "Choose repository folder" });
+  const selected = await open({
+    directory: true,
+    multiple: false,
+    title: "Choose repository folder",
+  });
   return typeof selected === "string" ? selected : null;
 }
 
-export async function readCandidateFiles(paths: string[]): Promise<FileStateDto[]> {
+export async function readCandidateFiles(
+  paths: string[],
+): Promise<FileStateDto[]> {
   return invoke("read_candidate_files", { request: { paths } });
 }
 
-export async function writePermissionFile(request: WritePermissionRequest): Promise<WritePermissionResponse> {
+export async function writePermissionFile(
+  request: WritePermissionRequest,
+): Promise<WritePermissionResponse> {
   return invoke("write_permission_file", { request });
 }
 
@@ -65,7 +73,10 @@ export async function openInFinder(path: string): Promise<void> {
   return invoke("open_in_finder", { path });
 }
 
-export function hydrateSources(sources: SourceFile[], states: FileStateDto[]): SourceFile[] {
+export function hydrateSources(
+  sources: SourceFile[],
+  states: FileStateDto[],
+): SourceFile[] {
   const byPath = new Map(states.map((state) => [state.path, state]));
   return sources.map((source) => {
     const state = byPath.get(source.path);
@@ -77,7 +88,7 @@ export function hydrateSources(sources: SourceFile[], states: FileStateDto[]): S
       writableByApp: state.writableByApp || !state.exists,
       isSymlink: state.isSymlink,
       resolvedPath: state.resolvedPath,
-      writeSupport: state.isSymlink ? "read-only" : source.writeSupport
+      writeSupport: state.isSymlink ? "read-only" : source.writeSupport,
     };
   });
 }
@@ -85,5 +96,7 @@ export function hydrateSources(sources: SourceFile[], states: FileStateDto[]): S
 export async function sha256Text(value: string): Promise<string> {
   const bytes = new TextEncoder().encode(value);
   const hash = await crypto.subtle.digest("SHA-256", bytes);
-  return [...new Uint8Array(hash)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+  return [...new Uint8Array(hash)]
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
 }

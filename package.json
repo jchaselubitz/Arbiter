@@ -1,14 +1,18 @@
 {
-  "name": "agent-permissions-editor",
+  "name": "arbiter",
   "version": "0.3.0",
   "private": true,
   "description": "Local-first desktop editor for AI coding agent permission files.",
   "type": "module",
   "scripts": {
-    "dev": "npm run dev -w @agent-permissions-editor/desktop",
+    "dev": "npm run dev -w @arbiter/desktop",
     "tauri": "node scripts/tauri.mjs",
+    "publish:mac": "node scripts/publish-macos.mjs",
     "build": "npm run build --workspaces",
-    "test": "npm run test -w @agent-permissions-editor/core",
+    "build:clean": "rm -rf apps/desktop/src-tauri/target apps/desktop/dist && npm run tauri -- build",
+    "clean": "npm cache clean --force && rm -rf node_modules && npm install",
+    "test": "npm run test -w @arbiter/core",
+    "test:publish-macos": "node --test scripts/publish-macos/helpers.test.mjs",
     "typecheck": "npm run typecheck --workspaces"
   },
   "workspaces": [
@@ -17,5 +21,8 @@
   ],
   "engines": {
     "node": ">=20"
+  },
+  "devDependencies": {
+    "@supabase/supabase-js": "^2.103.3"
   }
 }

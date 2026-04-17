@@ -143,7 +143,7 @@ Avoid:
 Create a standalone repository with this shape:
 
 ```text
-agent-permissions-editor/
+arbiter/
   package.json
   pnpm-workspace.yaml
   tsconfig.base.json
@@ -557,7 +557,7 @@ Research snapshot:
 - Cursor CLI permissions use permission tokens in CLI configuration.
 - Global CLI config: `~/.cursor/cli-config.json`.
 - Project CLI config: `<project>/.cursor/cli.json`.
-- Permission token types include `Shell(commandBase)`, `Read(pathOrGlob)`, and `Write(pathOrGlob)`.
+- Permission token types include `Shell(commandBase)`, `Read(pathOrGlob)`, `Write(pathOrGlob)`, and `Mcp(toolIdOrPattern)`.
 - Cursor docs state deny rules take precedence over allow rules.
 - Cursor project rules are stored under `.cursor/rules`.
 - Cursor user rules are global and defined in settings.
@@ -573,7 +573,7 @@ Initial Cursor adapter support:
 - Discover `<repo>/.cursorrules` as legacy read-only.
 - Parse `permissions.allow`.
 - Parse `permissions.deny`.
-- Normalize `Shell(...)`, `Read(...)`, and `Write(...)` permission tokens.
+- Normalize `Shell(...)`, `Read(...)`, `Write(...)`, and `Mcp(...)` permission tokens.
 - Treat rules files as instruction sources, not permissions.
 
 Creation targets:
@@ -771,7 +771,7 @@ Backup storage should live in the app data directory, not next to the edited fil
 Recommended path:
 
 - macOS: `~/Library/Application Support/Agent Permissions Editor/backups/`
-- Linux: `${XDG_DATA_HOME:-~/.local/share}/agent-permissions-editor/backups/`
+- Linux: `${XDG_DATA_HOME:-~/.local/share}/arbiter/backups/`
 
 ### Documentation Status Page
 
@@ -986,7 +986,7 @@ Codex:
 Cursor:
 
 - Validate JSON syntax.
-- Validate permission token grammar for `Shell`, `Read`, and `Write`.
+- Validate permission token grammar for `Shell`, `Read`, `Write`, and `Mcp`.
 - Validate allow/deny arrays.
 
 ## UI Design Direction

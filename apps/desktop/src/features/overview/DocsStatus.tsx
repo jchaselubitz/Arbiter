@@ -1,4 +1,4 @@
-import { adapters } from "@agent-permissions-editor/core";
+import { adapters } from "@arbiter/core";
 import { Card, CardContent } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
 

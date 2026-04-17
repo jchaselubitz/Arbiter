@@ -1,6 +1,6 @@
 import * as React from "react";
-import { adapters } from "@agent-permissions-editor/core";
-import type { AgentId, AgentSummary } from "@agent-permissions-editor/core";
+import { adapters } from "@arbiter/core";
+import type { AgentId, AgentSummary } from "@arbiter/core";
 import { Combobox } from "../ui/combobox";
 import { StatusPill } from "../ui/status-pill";
 

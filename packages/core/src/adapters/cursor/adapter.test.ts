@@ -20,6 +20,32 @@ describe("cursor adapter", () => {
     expect(plan.ok).toBe(false);
   });
 
+  it("accepts Mcp permission tokens", () => {
+    const context = createDiscoveryContext({ homeDir: "/home/me", repoPath: "/repo", platform: "linux" });
+    const source = cursorAdapter.discover(context).find((item) => item.path === "/repo/.cursor/cli.json")!;
+    const result = analyzeSources(context, [
+      { ...source, exists: true, content: '{"permissions":{"allow":["Mcp(next-devtools:init)"]}}' }
+    ]);
+    const summary = result.summaries.find((item) => item.agentId === "cursor");
+    expect(summary?.rules.map((r) => r.raw)).toContain("Mcp(next-devtools:init)");
+    expect(summary?.diagnostics.filter((d) => d.code === "cursor-token")).toHaveLength(0);
+  });
+
+  it("plans add-allow-rule for Mcp tokens", () => {
+    const context = createDiscoveryContext({ homeDir: "/home/me", repoPath: "/repo", platform: "linux" });
+    const source = cursorAdapter.discover(context).find((item) => item.path === "/repo/.cursor/cli.json")!;
+    const result = analyzeSources(context, [{ ...source, exists: true, content: "{}" }]);
+    const plan = planSourceChange(result, {
+      sourceId: source.id,
+      currentContent: "{}",
+      intent: "add-allow-rule",
+      value: "Mcp(next-devtools:init)",
+      actionLabel: "Allow MCP"
+    });
+    expect(plan.ok).toBe(true);
+    expect(plan.after).toContain("Mcp(next-devtools:init)");
+  });
+
   it("treats Cursor rules as the skills-equivalent extension surface", () => {
     const context = createDiscoveryContext({ homeDir: "/home/me", repoPath: "/repo", platform: "linux" });
     const source = cursorAdapter.discover(context).find((item) => item.path === "/repo/.cursor/rules")!;

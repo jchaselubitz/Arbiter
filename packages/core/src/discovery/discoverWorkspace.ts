@@ -34,5 +34,9 @@ export function planSourceChange(result: DiscoveryResult, input: PlanChangeInput
   if (!source) throw new Error(`Unknown source ${input.sourceId}`);
   const adapter = getAdapterForSource(source.id);
   if (!adapter) throw new Error(`No adapter for source ${source.id}`);
-  return adapter.planChange(input, source);
+  return adapter.planChange(input, {
+    ...source,
+    content: input.currentContent,
+    exists: input.currentContent !== null ? true : source.exists
+  });
 }

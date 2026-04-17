@@ -69,7 +69,7 @@ pub fn atomic_write(path: &Path, content: &str) -> io::Result<()> {
     ensure_parent(path)?;
     let parent = path.parent().unwrap_or_else(|| Path::new("."));
     let tmp = parent.join(format!(
-        ".{}.agent-permissions-editor.tmp",
+        ".{}.arbiter.tmp",
         path.file_name().and_then(|name| name.to_str()).unwrap_or("write")
     ));
     {
