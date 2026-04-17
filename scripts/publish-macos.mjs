@@ -136,7 +136,7 @@ function validateMacPrereqs({ env, skipCredentials }) {
   if (notary.status !== 0) {
     fail('Could not resolve notarytool via xcrun. Update Xcode Command Line Tools.');
   }
-  const stapler = runCapture({ cmd: 'xcrun', args: ['stapler', 'help'] });
+  const stapler = runCapture({ cmd: 'xcrun', args: ['--find', 'stapler'] });
   if (stapler.status !== 0) {
     fail('xcrun stapler is unavailable. Update Xcode Command Line Tools.');
   }
@@ -332,7 +332,7 @@ async function main() {
     run({
       cmd: 'npm',
       args: ['run', 'tauri', '--', 'build', '--target', 'aarch64-apple-darwin'],
-      options: { stdio: 'inherit', cwd: REPO_ROOT }
+      options: { stdio: 'inherit', cwd: REPO_ROOT, env }
     });
   }
 
@@ -428,7 +428,7 @@ async function main() {
       '--team-id',
       env.APPLE_TEAM_ID,
       '--password',
-      env.APPLE_PASSWORD,
+      env.APPLE_APP_SPECIFIC_PASSWORD,
       '--wait'
     ]
   });

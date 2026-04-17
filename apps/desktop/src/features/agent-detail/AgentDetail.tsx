@@ -7,7 +7,6 @@ import { PermissionMatrix } from "../../components/permission/PermissionMatrix";
 import { StatusPill } from "../../components/ui/status-pill";
 import { Card, CardHeader, CardTitle, CardContent } from "../../components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs";
-import { ScrollArea } from "../../components/ui/scroll-area";
 import { Badge } from "../../components/ui/badge";
 import { AgentIcon } from "../../components/layout/AgentSwitcher";
 import { Breadcrumbs } from "../../components/layout/Breadcrumbs";
@@ -41,7 +40,7 @@ function AgentDetail({ summary, activeTab, onTabChange, onSelectSource, onNaviga
   const tone = summary.status === "parse-error" ? "danger" : summary.status === "found" ? "ok" : "muted";
 
   return (
-    <div className="p-6 space-y-5 max-w-4xl">
+    <div className="p-6 flex flex-col gap-5 max-w-4xl h-full min-h-0">
       <Breadcrumbs
         items={[
           { label: "Overview", onClick: onNavigateHome },
@@ -77,12 +76,13 @@ function AgentDetail({ summary, activeTab, onTabChange, onSelectSource, onNaviga
 
       {/* Tabs: Permissions | Extensions | Files | Rules */}
       <Tabs
+        className="flex flex-1 min-h-0 flex-col"
         value={activeTab}
         onValueChange={(value: string) => {
           if (isAgentDetailTab(value)) onTabChange(value);
         }}
       >
-        <TabsList>
+        <TabsList className="shrink-0">
           <TabsTrigger value="permissions">Permissions</TabsTrigger>
           <TabsTrigger value="extensions">Skills & Plugins</TabsTrigger>
           <TabsTrigger value="files">Files ({summary.sources.length})</TabsTrigger>
@@ -147,8 +147,8 @@ function AgentDetail({ summary, activeTab, onTabChange, onSelectSource, onNaviga
           </div>
         </TabsContent>
 
-        <TabsContent value="rules" className="mt-4">
-          <ScrollArea className="max-h-96">
+        <TabsContent value="rules" className="mt-4 flex min-h-0 flex-1 flex-col">
+          <div className="h-full min-h-0 overflow-y-scroll">
             <div className="space-y-2">
               {summary.rules.length === 0 ? (
                 <p className="text-sm text-zinc-500 dark:text-zinc-400 py-4">No rules found.</p>
@@ -173,7 +173,7 @@ function AgentDetail({ summary, activeTab, onTabChange, onSelectSource, onNaviga
                 ))
               )}
             </div>
-          </ScrollArea>
+          </div>
         </TabsContent>
       </Tabs>
     </div>

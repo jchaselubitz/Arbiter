@@ -1,6 +1,6 @@
 {
   "name": "arbiter",
-  "version": "0.3.0",
+  "version": "0.3.9",
   "private": true,
   "description": "Local-first desktop editor for AI coding agent permission files.",
   "type": "module",

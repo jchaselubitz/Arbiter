@@ -1,6 +1,6 @@
 [package]
 name = "arbiter"
-version = "0.3.0"
+version = "0.3.9"
 description = "Local-first editor for AI agent permission files"
 authors = ["Agent Permissions Editor"]
 edition = "2021"

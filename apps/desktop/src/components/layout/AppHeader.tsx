@@ -1,5 +1,5 @@
 import * as React from "react";
-import { ChevronLeft, RefreshCw, ShieldCheck } from "lucide-react";
+import { ChevronDown, ChevronLeft, RefreshCw, ShieldCheck } from "lucide-react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import type { AgentId, AgentSummary, DiscoveryResult } from "@arbiter/core";
 import { adapters } from "@arbiter/core";
@@ -10,7 +10,6 @@ import { Popover, PopoverTrigger, PopoverContent } from "../ui/popover";
 import { Checkbox } from "../ui/checkbox";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
-import { ScrollArea } from "../ui/scroll-area";
 import { cn } from "../../lib/cn";
 import {
   commonAgentPermissionPresets,
@@ -145,6 +144,10 @@ function CommonPermissionsPopover({
 }) {
   const [open, setOpen] = React.useState(false);
   const [selectedPresetId, setSelectedPresetId] = React.useState(commonAgentPermissionPresets[0]?.id ?? "custom");
+  const [expandedPresetIds, setExpandedPresetIds] = React.useState<Set<string>>(() => {
+    const firstId = commonAgentPermissionPresets[0]?.id;
+    return firstId ? new Set([firstId]) : new Set();
+  });
   const [customCommand, setCustomCommand] = React.useState("");
   const [selectedAgentIds, setSelectedAgentIds] = React.useState<AgentId[]>([]);
   const selectedPreset = commonAgentPermissionPresets.find((preset) => preset.id === selectedPresetId) ?? null;
@@ -173,6 +176,20 @@ function CommonPermissionsPopover({
     setSelectedAgentIds((current) => current.filter((agentId) => selectableIds.includes(agentId)));
   }, [selectableIds.join("|")]);
 
+  React.useEffect(() => {
+    if (selectedPresetId === "custom") return;
+    setExpandedPresetIds((current) => new Set(current).add(selectedPresetId));
+  }, [selectedPresetId]);
+
+  function togglePresetCommandsExpanded({ presetId }: { presetId: string }) {
+    setExpandedPresetIds((current) => {
+      const next = new Set(current);
+      if (next.has(presetId)) next.delete(presetId);
+      else next.add(presetId);
+      return next;
+    });
+  }
+
   function toggleAgent(agentId: AgentId, checked: boolean | "indeterminate") {
     setSelectedAgentIds((current) => {
       if (checked === true) return current.includes(agentId) ? current : [...current, agentId];
@@ -196,8 +213,11 @@ function CommonPermissionsPopover({
           Common Permissions
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-[480px] p-0">
-        <div className="px-4 pt-4 pb-2 border-b border-zinc-100 dark:border-zinc-800">
+      <PopoverContent
+        align="end"
+        className="flex max-h-[min(560px,calc(100vh-3rem))] w-[480px] flex-col overflow-hidden p-0"
+      >
+        <div className="shrink-0 border-b border-zinc-100 px-4 pt-4 pb-2 dark:border-zinc-800">
           <div className="flex items-center gap-2">
             <ShieldCheck className="h-4 w-4 text-[#1d7f68] dark:text-[#3dd6aa]" aria-hidden />
             <h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-100">Common Permissions</h3>
@@ -206,46 +226,83 @@ function CommonPermissionsPopover({
             Recommended command groups for routine coding tasks.
           </p>
         </div>
-        <form onSubmit={submit} className="p-4 space-y-4">
-          <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-600">
-              Permission set
-            </p>
-            <ScrollArea className="max-h-72 pr-2">
+        <form onSubmit={submit} className="flex min-h-0 flex-1 flex-col">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 space-y-4">
+            <div className="space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-600">
+                Permission set
+              </p>
               <div className="grid grid-cols-1 gap-2">
-                {commonAgentPermissionPresets.map((preset) => (
-                  <button
-                    key={preset.id}
-                    type="button"
-                    onClick={() => setSelectedPresetId(preset.id)}
-                    className={cn(
-                      "rounded-lg border p-3 text-left transition-colors",
-                      selectedPresetId === preset.id
-                        ? "border-[#1d7f68] bg-[#e9f7f3] dark:border-[#3dd6aa] dark:bg-[#102c25]"
-                        : "border-zinc-200 bg-white hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
-                    )}
-                  >
-                    <span className="flex items-center justify-between gap-2">
-                      <span className="text-sm font-medium text-zinc-800 dark:text-zinc-100">{preset.label}</span>
-                      <span
+                {commonAgentPermissionPresets.map((preset) => {
+                  const commandsExpanded = expandedPresetIds.has(preset.id);
+                  return (
+                    <div
+                      key={preset.id}
+                      className={cn(
+                        "overflow-hidden rounded-lg border transition-colors",
+                        selectedPresetId === preset.id
+                          ? "border-[#1d7f68] bg-[#e9f7f3] dark:border-[#3dd6aa] dark:bg-[#102c25]"
+                          : "border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900"
+                      )}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => setSelectedPresetId(preset.id)}
                         className={cn(
-                          "rounded-md px-1.5 py-0.5 text-[11px] font-medium capitalize",
-                          preset.risk === "low"
-                            ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
-                            : preset.risk === "medium"
-                              ? "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300"
-                              : "bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300"
+                          "w-full p-3 text-left transition-colors",
+                          selectedPresetId !== preset.id && "hover:bg-zinc-50 dark:hover:bg-zinc-800"
                         )}
                       >
-                        {preset.risk}
-                      </span>
-                    </span>
-                    <span className="mt-1 block text-xs text-zinc-500 dark:text-zinc-400">{preset.description}</span>
-                    <code className="mt-1.5 block truncate text-xs text-zinc-500 dark:text-zinc-400">
-                      {preset.commands.join(", ")}
-                    </code>
-                  </button>
-                ))}
+                        <span className="flex items-center justify-between gap-2">
+                          <span className="text-sm font-medium text-zinc-800 dark:text-zinc-100">{preset.label}</span>
+                          <span
+                            className={cn(
+                              "rounded-md px-1.5 py-0.5 text-[11px] font-medium capitalize",
+                              preset.risk === "low"
+                                ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
+                                : preset.risk === "medium"
+                                  ? "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300"
+                                  : "bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300"
+                            )}
+                          >
+                            {preset.risk}
+                          </span>
+                        </span>
+                        <span className="mt-1 block text-xs text-zinc-500 dark:text-zinc-400">{preset.description}</span>
+                      </button>
+                      <div className="border-t border-zinc-200/80 bg-white/60 px-2 py-1.5 dark:border-zinc-700/80 dark:bg-zinc-950/40">
+                        <button
+                          type="button"
+                          onClick={() => togglePresetCommandsExpanded({ presetId: preset.id })}
+                          className="flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left text-xs font-medium text-zinc-600 hover:bg-zinc-100/80 dark:text-zinc-400 dark:hover:bg-zinc-800/80"
+                          aria-expanded={commandsExpanded}
+                        >
+                          <span>
+                            Included commands ({preset.commands.length}){commandsExpanded ? "" : " — tap to expand"}
+                          </span>
+                          <ChevronDown
+                            className={cn(
+                              "h-3.5 w-3.5 shrink-0 text-zinc-400 transition-transform dark:text-zinc-500",
+                              commandsExpanded && "rotate-180"
+                            )}
+                            aria-hidden
+                          />
+                        </button>
+                        {commandsExpanded && (
+                          <ul className="mt-1 max-h-48 space-y-1 overflow-y-auto overscroll-contain border-l-2 border-zinc-200 py-0.5 pl-2 dark:border-zinc-600">
+                            {preset.commands.map((command) => (
+                              <li key={command}>
+                                <code className="block break-all text-[11px] leading-snug text-zinc-700 dark:text-zinc-300">
+                                  {command}
+                                </code>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
                 <button
                   type="button"
                   onClick={() => setSelectedPresetId("custom")}
@@ -262,28 +319,24 @@ function CommonPermissionsPopover({
                   </span>
                 </button>
               </div>
-            </ScrollArea>
-          </div>
-
-          {selectedPresetId === "custom" && (
-            <div className="space-y-1.5">
-              <Label htmlFor="header-bash-command">Command</Label>
-              <Input
-                id="header-bash-command"
-                value={customCommand}
-                onChange={(e) => setCustomCommand(e.target.value)}
-                placeholder="npm test"
-                autoFocus
-              />
             </div>
-          )}
 
-          <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-600">
-              Agents
-            </p>
-            <ScrollArea className="max-h-52">
-              <div className="space-y-2 pr-1">
+            {selectedPresetId === "custom" && (
+              <div className="space-y-1.5">
+                <Label htmlFor="header-bash-command">Command</Label>
+                <Input
+                  id="header-bash-command"
+                  value={customCommand}
+                  onChange={(e) => setCustomCommand(e.target.value)}
+                  placeholder="npm test"
+                  autoFocus
+                />
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-600">Agents</p>
+              <div className="space-y-2">
                 {adapters.map((adapter) => {
                   const agentId = adapter.id as AgentId;
                   const summary = summariesByAgent.get(agentId);
@@ -350,10 +403,10 @@ function CommonPermissionsPopover({
                   );
                 })}
               </div>
-            </ScrollArea>
+            </div>
           </div>
 
-          <div className="flex justify-end">
+          <div className="flex shrink-0 justify-end border-t border-zinc-100 bg-white/95 px-4 py-3 backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-950/95">
             <Button type="submit" size="sm" disabled={plannedCommands.length === 0 || selectedAgentIds.length === 0}>
               Preview changes
             </Button>

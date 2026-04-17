@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Arbiter",
-  "version": "0.3.0",
+  "version": "0.3.9",
   "identifier": "com.cooperativ.arbiter",
   "build": {
     "beforeDevCommand": "npm run vite",
@@ -22,7 +22,9 @@
         "titleBarStyle": "Overlay",
         "hiddenTitle": true,
         "windowEffects": {
-          "effects": ["underWindowBackground"],
+          "effects": [
+            "underWindowBackground"
+          ],
           "state": "followsWindowActiveState"
         }
       }
@@ -44,7 +46,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDgyQ0Y4MUUzNzg0NkM1QzEKUldUQnhVWjQ0NEhQZ3BKckRoU1E0S01KcUVEWW5nVUhiZlNFQ1ZUK0FjMmRPd2ZyRm1nWXh2d2cK",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEE0RjREN0EyMkFGNzUwMDEKUldRQlVQY3FvdGYwcE1EMW5ma2dSVnpsZkFoKzB6c2NvSTNBOTJieHh0VGVKd3pETURya2Q3OFoK",
       "endpoints": [
         "https://example.supabase.co/storage/v1/object/public/app-downloads/arbiter/tauri-latest.json"
       ]
